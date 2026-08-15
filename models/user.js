@@ -1,5 +1,5 @@
-const mongoose = require('momngoose');
-const bcrypt = require('bcrypt');
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema(
     {
@@ -45,3 +45,7 @@ const userSchema = new mongoose.Schema(
     },
     {timestamps: true}
 );
+userSchema.index({ location: '2dsphere' });
+
+const User = mongoose.model("User", userSchema);
+module.exports = User;
