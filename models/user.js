@@ -47,5 +47,15 @@ const userSchema = new mongoose.Schema(
 );
 userSchema.index({ location: '2dsphere' });
 
-const User = mongoose.model("User", userSchema);
-module.exports = User;
+userSchema.pre('save', async function () {
+    if (!this.isModified('password')) return ;
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+});
+
+// Compare a plain password against the stored hash
+userSchema.methods.comparePassword = async function (candidatePassword) {
+    return bcrypt.compare(candidatePassword, this.password);
+};
+
+module.exports = mongoose.model('User', userSchema);
