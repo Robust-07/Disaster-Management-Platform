@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+
 const protect = (req, res, next) => {
   let token;
 
@@ -20,7 +21,6 @@ const protect = (req, res, next) => {
   }
 };
 
-// Restrict a route to specific roles, e.g. authorize('authority', 'ngo')
 const authorize = (...allowedRoles) => {
   return (req, res, next) => {
     if (!allowedRoles.includes(req.user.role)) {

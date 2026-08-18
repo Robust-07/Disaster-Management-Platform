@@ -19,6 +19,7 @@ app.use(helmet());
 app.use(morgan('dev'));
 
 app.use('/api/auth', require('./routes/authroutes.js'));
+app.use('/api/sos', require('./routes/sosroutes.js'));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Server is running' });
