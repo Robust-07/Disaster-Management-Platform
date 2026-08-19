@@ -1,5 +1,6 @@
 const SOSReport = require('../models/report.js');
 const uploadBufferToCloudinary = require('../utils/cloudinaryUpload.js');
+const calculateSeverity = require('../utils/severity.js');
 
 module.exports.createSOS = async(req,res) => {
     try{
@@ -16,6 +17,12 @@ module.exports.createSOS = async(req,res) => {
             const result = await uploadBufferToCloudinary(req.file.buffer);
             photoUrl = result.secure_url;
         }
+
+        const {severityScore, category} = calculateSeverity({
+            description,
+            peopleCount: peopleCount || 1,
+            hasPhoto: !!photoUrl,
+        });
 
         const sosReport = await SOSReport.create({
             reporterId: req.user.id,
@@ -49,7 +56,7 @@ module.exports.getAllSOS = async(req,res) => {
         res.status(500).json({message: 'Failed to fetch report', error: err.message});
 
     };
-}
+};
 
 module.exports.getSOSById = async(req,res) => {
     try{
@@ -66,7 +73,7 @@ module.exports.getSOSById = async(req,res) => {
     catch(err){
         res.status(500).json({message: 'Failed to fetch report', error: err.message});
     }
-}
+};
 
 module.exports.getMySOS = async(req, res) => {
     try{
@@ -79,5 +86,55 @@ module.exports.getMySOS = async(req, res) => {
         res.status(500).json({message: 'Failed to fetch SOSReport', error: err.message});
     }
 
+};
+
+module.exports.updateSOSStauts = async(req,re)=>{
+    try{
+        const {status} = req.body;
+        const validStatuses = ['pending', 'assigned', 'in-progress', 'resolved'];
+
+        if(!status || !validStatuses.includes(status)){
+            return res.status(400).json({
+                message: `status must be one of: ${validStatuses.join(', ')}`,
+            });
+        }
+        const report = await SOSReport.findById(req.params.id);
+        if (!report){
+            return res.status(404).json({message: 'SOS report not found'});
+        }
+        report.status = status;
+        await report.save();
+
+        res.status(200).json({message: 'Status updated', sosReport: report});
+    }
+    catch(err){
+        res.status(500).json({message: 'Failed to update status', error: 'err.message'});
+    }
+};
+
+module.exports.cancelSOS = async(req,res) => {
+    try{
+        const report = await SOSReport.findById(req.params.id);
+        if (!report){
+            return res.status(404).json({message: 'SOS Report not found'});
+        }
+
+        const isOwner = report.reporterId.toString() == req.user.id;
+        const isAuthority = req.user.role == 'authority';
+
+        if (!isOwner && !isAuthority){
+            return res.status(403).json({message: 'Not authorizred to cancel this sos report'});
+        }
+
+        report.status = 'resolved';
+        report.cancelledAt = new Date();
+        await report.save();
+
+        res.status(200).json({message: 'SOS report cancelled', sosReport: report});
+
+    }
+    catch(err){
+        res.status(500).json({message: 'Failed to cancel SOS report', error: err.message});
+    }
 };
 

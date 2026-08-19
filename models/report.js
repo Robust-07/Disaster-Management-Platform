@@ -54,6 +54,10 @@ const sosReportSchema = new mongoose.Schema(
             ref: 'RescueTeam',
             default: null,
         },
+        cancelledAt: {
+            type: Date,
+            default: null,
+        },
     },
     {timestamps: true}
 );
