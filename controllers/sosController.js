@@ -1,14 +1,69 @@
 const SOSReport = require('../models/report.js');
 const uploadBufferToCloudinary = require('../utils/cloudinaryUpload.js');
+const predictSOSSeverity = require('../utils/mlService.js');
 
 module.exports.createSOS = async(req,res) => {
     try{
-        const {description, peopleCount, longitude, latitude} = req.body;
+        const {
+            description,
+            peopleCount,
+            longitude,
+            latitude,
+            injured_people,
+            critical_injuries,
+            children_elderly,
+            water_level,
+            building_damage,
+            hours_trapped,
+            communication_available
+        } = req.body;
 
         if (!description || !latitude || !longitude){
             return res.status(400).json({
                 message: 'description, longitude and latitude are required',
             });
+        }
+
+        const numPeopleCount = Number(peopleCount || 1);
+        const numInjured = Number(injured_people);
+        const numCritical = Number(critical_injuries);
+        const numChildrenElderly = Number(children_elderly);
+        const numWaterLevel = Number(water_level);
+        const numBuildingDamage = Number(building_damage);
+        const numHoursTrapped = Number(hours_trapped);
+        const numCommAvailable = Number(communication_available);
+
+        if (
+            injured_people === undefined || isNaN(numInjured) ||
+            critical_injuries === undefined || isNaN(numCritical) ||
+            children_elderly === undefined || isNaN(numChildrenElderly) ||
+            water_level === undefined || isNaN(numWaterLevel) ||
+            building_damage === undefined || isNaN(numBuildingDamage) ||
+            hours_trapped === undefined || isNaN(numHoursTrapped) ||
+            communication_available === undefined || isNaN(numCommAvailable)
+        ) {
+            return res.status(400).json({
+                message: 'Missing required ML feature inputs: injured_people, critical_injuries, children_elderly, water_level, building_damage, hours_trapped, and communication_available are required numbers.'
+            });
+        }
+
+        if (numPeopleCount < 1) {
+            return res.status(400).json({ message: 'peopleCount must be at least 1' });
+        }
+        if (numInjured < 0 || numCritical < 0 || numChildrenElderly < 0 || numWaterLevel < 0 || numBuildingDamage < 0 || numHoursTrapped < 0) {
+            return res.status(400).json({ message: 'ML numerical inputs cannot be negative' });
+        }
+        if (numCommAvailable !== 0 && numCommAvailable !== 1) {
+            return res.status(400).json({ message: 'communication_available must be 0 or 1' });
+        }
+        if (numInjured > numPeopleCount) {
+            return res.status(400).json({ message: 'injured_people cannot exceed peopleCount' });
+        }
+        if (numCritical > numInjured) {
+            return res.status(400).json({ message: 'critical_injuries cannot exceed injured_people' });
+        }
+        if (numChildrenElderly > numPeopleCount) {
+            return res.status(400).json({ message: 'children_elderly cannot exceed peopleCount' });
         }
 
         let photoUrl = null;
@@ -17,15 +72,38 @@ module.exports.createSOS = async(req,res) => {
             photoUrl = result.secure_url;
         }
 
+        const mlPrediction = await predictSOSSeverity({
+            peopleCount: numPeopleCount,
+            injured_people: numInjured,
+            critical_injuries: numCritical,
+            children_elderly: numChildrenElderly,
+            water_level: numWaterLevel,
+            building_damage: numBuildingDamage,
+            hours_trapped: numHoursTrapped,
+            communication_available: numCommAvailable
+        });
+
         const sosReport = await SOSReport.create({
             reporterId: req.user.id,
             description,
-            peopleCount: peopleCount || 1,
+            peopleCount: numPeopleCount,
+            injuredPeople: numInjured,
+            criticalInjuries: numCritical,
+            childrenElderly: numChildrenElderly,
+            waterLevel: numWaterLevel,
+            buildingDamage: numBuildingDamage,
+            hoursTrapped: numHoursTrapped,
+            communicationAvailable: numCommAvailable,
             photoUrl: photoUrl,
             location: {
                 type: 'Point',
                 coordinates: [Number(longitude), Number(latitude)],
             },
+            severityScore: mlPrediction.severityScore,
+            severityLabel: mlPrediction.severityLabel,
+            mlProbability: mlPrediction.mlProbability,
+            isMlPredicted: mlPrediction.isMlPredicted,
+            mlStatus: mlPrediction.mlStatus
         });
         res.status(201).json({sosReport});
     }
