@@ -22,6 +22,7 @@ app.use(morgan('dev'));
 app.use('/api/auth', require('./routes/authroutes.js'));
 app.use('/api/sos', require('./routes/sosroutes.js'));
 app.use('/api/rescue', require('./routes/rescueroutes.js'));
+app.use('/api/risk-zones', require('./routes/riskzoneroutes.js'));
 
 
 // Health check
