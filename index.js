@@ -5,11 +5,10 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 
-
 connectDB();
+
 const User = require("./models/user.js");
 const sosReport = require("./models/report.js");
-
 
 const app = express();
 
@@ -18,20 +17,24 @@ app.use(cors());
 app.use(helmet());
 app.use(morgan('dev'));
 
+
+// Routes
 app.use('/api/auth', require('./routes/authroutes.js'));
 app.use('/api/sos', require('./routes/sosroutes.js'));
+app.use('/api/rescue', require('./routes/rescueroutes.js'));
 
+
+// Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Server is running' });
+  res.json({
+    status: 'ok',
+    message: 'Server is running'
+  });
 });
 
 
-
-
-
-
-
-
-
 const PORT = process.env.PORT;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
