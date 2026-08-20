@@ -88,7 +88,7 @@ module.exports.getMySOS = async(req, res) => {
 
 };
 
-module.exports.updateSOSStauts = async(req,re)=>{
+module.exports.updateSOSStatus = async(req,res)=>{
     try{
         const {status} = req.body;
         const validStatuses = ['pending', 'assigned', 'in-progress', 'resolved'];

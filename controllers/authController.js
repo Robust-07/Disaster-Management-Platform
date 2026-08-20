@@ -15,6 +15,19 @@ module.exports.signup = async(req,res) => {
         if(!name || !email || !phone || !password){
             return res.status(400).json({message: 'missing required fields'});
         }
+
+         // Email format validation
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ message: 'Invalid email format' });
+        }
+
+        // Phone format validation
+        const phoneRegex = /^[6-9]\d{9}$/;
+        if (!phoneRegex.test(phone)) {
+            return res.status(400).json({ message: 'Invalid phone number format' });
+        }
+        
         const existingUser = await User.findOne({email});
         if (existingUser){
             return res.status(409).json({message: 'email already registered'});
