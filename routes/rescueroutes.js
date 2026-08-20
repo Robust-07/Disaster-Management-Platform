@@ -12,7 +12,6 @@ const {
   getNearbyTeams,
 } = require("../controllers/rescueController");
 
-
 // Create rescue team
 router.post("/", createRescueTeam);
 
@@ -28,11 +27,10 @@ router.get("/:id", getRescueTeamById);
 // Update rescue team
 router.patch("/:id", updateRescueTeam);
 
-// Update location
+// Update team location
 router.patch("/:id/location", updateTeamLocation);
 
 // Delete rescue team
 router.delete("/:id", deleteRescueTeam);
-
 
 module.exports = router;
