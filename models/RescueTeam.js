@@ -126,4 +126,5 @@ rescueTeamSchema.index({
   currentLocation: "2dsphere",
 });
 
-module.exports = mongoose.model("RescueTeam", rescueTeamSchema);
+const RescueTeam = mongoose.model("RescueTeam", rescueTeamSchema);
+module.exports = RescueTeam;

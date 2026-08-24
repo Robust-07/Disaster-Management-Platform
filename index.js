@@ -9,6 +9,8 @@ connectDB();
 
 const User = require("./models/user.js");
 const sosReport = require("./models/report.js");
+const Resource = require('./models/Resource.js');
+
 
 const app = express();
 
@@ -22,20 +24,22 @@ app.use(morgan('dev'));
 app.use('/api/auth', require('./routes/authroutes.js'));
 app.use('/api/sos', require('./routes/sosroutes.js'));
 app.use('/api/rescue', require('./routes/rescueroutes.js'));
-app.use('/api/risk-zones', require('./routes/riskzoneroutes.js'));
+app.use('/api/shelter', require('./routes/shelterroutes.js'));
+app.use('/api/riskzones', require('./routes/riskzoneroutes.js'));
+app.use('/api/resource', require('./routes/resourceroutes.js'));
 
 
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
-    message: 'Server is running'
+    message: 'server is running'
   });
 });
 
 
 const PORT = process.env.PORT;
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+app.listen(PORT, (req,res)=>{
+  consol
+})
