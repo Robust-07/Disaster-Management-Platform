@@ -1,5 +1,5 @@
 const predictSOSSeverity = async (features) => {
-    const mlServiceUrl = process.env.ML_SERVICE_URL || 'http://localhost:5000';
+    const mlServiceUrl = process.env.ML_SERVICE_URL;
     
     const payload = {
         people_trapped: Number(features.peopleCount),

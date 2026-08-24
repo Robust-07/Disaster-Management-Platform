@@ -32,12 +32,23 @@ const sosReportSchema = new mongoose.Schema(
         photoUrl: {
             type: String,
             default: null,
-
-
         },
         severityScore: {
             type: Number,
             default: 0,
+        },
+        severityLabel: {
+            type: String,
+            enum: ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
+            default: "LOW"
+        },
+        mlProbability: {
+            type: Number,
+            default: null
+        },
+        isMlPredicted: {
+            type: Boolean,
+            default: false
         },
         category: {
             type: String,

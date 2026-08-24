@@ -1,10 +1,22 @@
 const SOSReport = require('../models/report.js');
 const uploadBufferToCloudinary = require('../utils/cloudinaryUpload.js');
 const calculateSeverity = require('../utils/severity.js');
+const predictSOSSeverity = require('../utils/ml-service.js');
 
 module.exports.createSOS = async(req,res) => {
     try{
-        const {description, peopleCount, longitude, latitude} = req.body;
+        const {description,
+            peopleCount,
+            injured_people,
+            critical_injuries,
+            children_elderly,
+            water_level,
+            building_damage,
+            hours_trapped,
+            communication_available,
+            longitude,
+            latitude
+        } = req.body;
 
         if (!description || !latitude || !longitude){
             return res.status(400).json({
@@ -18,25 +30,55 @@ module.exports.createSOS = async(req,res) => {
             photoUrl = result.secure_url;
         }
 
-        const {severityScore, category} = calculateSeverity({
+        const { category } = calculateSeverity({
             description,
             peopleCount: peopleCount || 1,
-            hasPhoto: !!photoUrl,
+            hasPhoto: !!photoUrl
         });
+
+        const mlResult = await predictSOSSeverity({
+            peopleCount: peopleCount || 1,
+            injured_people: injured_people || 0,
+            critical_injuries: critical_injuries || 0,
+            children_elderly: children_elderly || 0,
+            water_level: water_level || 0,
+            building_damage: building_damage || 0,
+            hours_trapped: hours_trapped || 0,
+            communication_available: communication_available ?? 1
+        });
+
 
         const sosReport = await SOSReport.create({
             reporterId: req.user.id,
             description,
             peopleCount: peopleCount || 1,
             photoUrl: photoUrl,
-            severityScore,
+            severityScore: mlResult.severityScore,
+            severityLabel: mlResult.severityLabel,
+            mlProbability: mlResult.mlProbability,
+            isMlPredicted: mlResult.isMlPredicted,
             category,
             location: {
                 type: 'Point',
                 coordinates: [Number(longitude), Number(latitude)],
             },
         });
-        res.status(201).json({sosReport});
+        res.status(201).json({
+            message: 'sos submitted successfully',
+            sosReport,
+            mlPrediction: {
+                severity:
+                    mlResult.severityLabel,
+                severityScore:
+                    mlResult.severityScore,
+                probability:
+                    mlResult.mlProbability,
+                status:
+                    mlResult.mlStatus,
+                isMlPredicted:
+                    mlResult.isMlPredicted
+            }
+        });
     }
     catch(err){
         console.log(err);
