@@ -3,9 +3,10 @@ const uploadBufferToCloudinary = require('../utils/cloudinaryUpload.js');
 const calculateSeverity = require('../utils/severity.js');
 const predictSOSSeverity = require('../utils/mlservice.js');
 
-module.exports.createSOS = async(req,res) => {
-    try{
-        const {description,
+module.exports.createSOS = async (req, res) => {
+    try {
+        const {
+            description,
             peopleCount,
             injured_people,
             critical_injuries,
@@ -18,165 +19,417 @@ module.exports.createSOS = async(req,res) => {
             latitude
         } = req.body;
 
-        if (!description || !latitude || !longitude){
+        if (
+            !description ||
+            latitude === undefined ||
+            latitude === null ||
+            longitude === undefined ||
+            longitude === null
+        ) {
             return res.status(400).json({
-                message: 'description, longitude and latitude are required',
+                message: 'description, longitude and latitude are required'
             });
         }
 
+        const peopleTrapped = Number(peopleCount) || 1;
+        const injuredPeople = Number(injured_people) || 0;
+        const criticalInjuries = Number(critical_injuries) || 0;
+        const childrenElderly = Number(children_elderly) || 0;
+        const waterLevel = Number(water_level) || 0;
+        const buildingDamage = Number(building_damage) || 0;
+        const hoursTrapped = Number(hours_trapped) || 0;
+
+        // communication_available can be 0
+        // so don't use || here
+        const communicationAvailable =
+            communication_available === undefined ||
+            communication_available === null
+                ? 1
+                : Number(communication_available);
+
         let photoUrl = null;
+
         if (req.file) {
-            const result = await uploadBufferToCloudinary(req.file.buffer);
+
+            const result = await uploadBufferToCloudinary(
+                req.file.buffer
+            );
+
             photoUrl = result.secure_url;
         }
 
         const { category } = calculateSeverity({
             description,
-            peopleCount: peopleCount || 1,
+            peopleCount: peopleTrapped,
             hasPhoto: !!photoUrl
         });
 
         const mlResult = await predictSOSSeverity({
-            peopleCount: peopleCount || 1,
-            injured_people: injured_people || 0,
-            critical_injuries: critical_injuries || 0,
-            children_elderly: children_elderly || 0,
-            water_level: water_level || 0,
-            building_damage: building_damage || 0,
-            hours_trapped: hours_trapped || 0,
-            communication_available: communication_available ?? 1
+            peopleCount: peopleTrapped,
+            injured_people: injuredPeople,
+            critical_injuries: criticalInjuries,
+            children_elderly: childrenElderly,
+            water_level: waterLevel,
+            building_damage: buildingDamage,
+            hours_trapped: hoursTrapped,
+            communication_available: communicationAvailable
         });
 
-
         const sosReport = await SOSReport.create({
+
             reporterId: req.user.id,
             description,
-            peopleCount: peopleCount || 1,
-            photoUrl: photoUrl,
+            peopleCount: peopleTrapped,
+            photoUrl,
             severityScore: mlResult.severityScore,
             severityLabel: mlResult.severityLabel,
             mlProbability: mlResult.mlProbability,
             isMlPredicted: mlResult.isMlPredicted,
+
             category,
             location: {
                 type: 'Point',
-                coordinates: [Number(longitude), Number(latitude)],
-            },
-        });
-        res.status(201).json({
-            message: 'sos submitted successfully',
-            sosReport,
-            mlPrediction: {
-                severity:
-                    mlResult.severityLabel,
-                severityScore:
-                    mlResult.severityScore,
-                probability:
-                    mlResult.mlProbability,
-                status:
-                    mlResult.mlStatus,
-                isMlPredicted:
-                    mlResult.isMlPredicted
+                coordinates: [
+                    Number(longitude),
+                    Number(latitude)
+                ]
             }
         });
+        return res.status(201).json({
+
+            success: true,
+
+            message: 'SOS submitted successfully',
+
+            sosReport,
+
+            mlPrediction: {
+
+                severity: mlResult.severityLabel,
+
+                severityScore: mlResult.severityScore,
+
+                probability: mlResult.mlProbability,
+
+                status: mlResult.mlStatus,
+
+                isMlPredicted: mlResult.isMlPredicted
+
+            }
+
+        });
+
     }
-    catch(err){
-        console.log(err);
-        res.status(500).json({
-            message: 'Submission failed', error: err.message
+
+    catch (err) {
+
+        console.error('CREATE SOS ERROR:', err);
+
+        return res.status(500).json({
+
+            success: false,
+
+            message: 'Submission failed',
+
+            error: err.message
+
         });
     }
 };
 
-module.exports.getAllSOS = async(req,res) => {
-    try{
+module.exports.getAllSOS = async (req, res) => {
+
+    try {
+
         const reports = await SOSReport.find()
-        .populate('reporterId', 'name phone email')
-        .sort({createdAt: -1});
-        res.status(200).json({ count: reports.length, reports});
+
+            .populate(
+                'reporterId',
+                'name phone email'
+            )
+
+            .sort({
+                createdAt: -1
+            });
+
+
+        return res.status(200).json({
+
+            success: true,
+
+            count: reports.length,
+
+            reports
+
+        });
 
     }
-    catch(err){
-        res.status(500).json({message: 'Failed to fetch report', error: err.message});
 
-    };
+    catch (err) {
+
+        console.error('GET ALL SOS ERROR:', err);
+
+        return res.status(500).json({
+
+            success: false,
+
+            message: 'Failed to fetch reports',
+
+            error: err.message
+
+        });
+    }
 };
 
-module.exports.getSOSById = async(req,res) => {
-    try{
-        const report = await SOSReport.findById(req.params.id).populate(
+module.exports.getSOSById = async (req, res) => {
+
+    try {
+
+        const report = await SOSReport.findById(
+            req.params.id
+        ).populate(
             'reporterId',
             'name phone email'
         );
-        if (!report){
-            return res.status(404).json({message: 'report not found'})
-        }
-        res.status(200).json({report});
 
-    }
-    catch(err){
-        res.status(500).json({message: 'Failed to fetch report', error: err.message});
-    }
-};
 
-module.exports.getMySOS = async(req, res) => {
-    try{
-        const reports = await SOSReport.find({reporterId: req.user.id}).sort({createdAt: -1});
-        res.status(200).json({count: reports.length, reports});
-    }
-    catch(err){
-        res.status(500).json({message: 'Failed to fetch SOSReport', error: err.message});
-    }
+        if (!report) {
 
-};
+            return res.status(404).json({
 
-module.exports.updateSOSStatus = async(req,res)=>{
-    try{
-        const {status} = req.body;
-        const validStatuses = ['pending', 'assigned', 'in-progress', 'resolved'];
+                success: false,
 
-        if(!status || !validStatuses.includes(status)){
-            return res.status(400).json({
-                message: `status must be one of: ${validStatuses.join(', ')}`,
+                message: 'SOS report not found'
+
             });
         }
-        const report = await SOSReport.findById(req.params.id);
-        if (!report){
-            return res.status(404).json({message: 'SOS report not found'});
-        }
-        report.status = status;
-        await report.save();
 
-        res.status(200).json({message: 'Status updated', sosReport: report});
+
+        return res.status(200).json({
+
+            success: true,
+
+            report
+
+        });
+
     }
-    catch(err){
-        res.status(500).json({message: 'Failed to update status', error: 'err.message'});
+
+    catch (err) {
+
+        console.error('GET SOS BY ID ERROR:', err);
+
+        return res.status(500).json({
+
+            success: false,
+
+            message: 'Failed to fetch report',
+
+            error: err.message
+
+        });
     }
 };
 
-module.exports.cancelSOS = async(req,res) => {
-    try{
-        const report = await SOSReport.findById(req.params.id);
-        if (!report){
-            return res.status(404).json({message: 'SOS Report not found'});
+module.exports.getMySOS = async (req, res) => {
+
+    try {
+
+        const reports = await SOSReport.find({
+
+            reporterId: req.user.id
+
+        }).sort({
+
+            createdAt: -1
+
+        });
+
+
+        return res.status(200).json({
+
+            success: true,
+
+            count: reports.length,
+
+            reports
+
+        });
+
+    }
+
+    catch (err) {
+
+        console.error('GET MY SOS ERROR:', err);
+
+        return res.status(500).json({
+
+            success: false,
+
+            message: 'Failed to fetch SOS reports',
+
+            error: err.message
+
+        });
+    }
+};
+
+module.exports.updateSOSStatus = async (req, res) => {
+
+    try {
+
+        const { status } = req.body;
+
+
+        const validStatuses = [
+            'pending',
+            'assigned',
+            'in-progress',
+            'resolved'
+        ];
+
+
+        if (
+            !status ||
+            !validStatuses.includes(status)
+        ) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message:
+                    `status must be one of: ${validStatuses.join(', ')}`
+
+            });
         }
 
-        const isOwner = report.reporterId.toString() == req.user.id;
-        const isAuthority = req.user.role == 'authority';
 
-        if (!isOwner && !isAuthority){
-            return res.status(403).json({message: 'Not authorizred to cancel this sos report'});
+        const report = await SOSReport.findById(
+            req.params.id
+        );
+
+
+        if (!report) {
+
+            return res.status(404).json({
+
+                success: false,
+
+                message: 'SOS report not found'
+
+            });
         }
+
+
+        report.status = status;
+
+        await report.save();
+
+
+        return res.status(200).json({
+
+            success: true,
+
+            message: 'Status updated successfully',
+
+            sosReport: report
+
+        });
+
+    }
+
+    catch (err) {
+
+        console.error('UPDATE SOS STATUS ERROR:', err);
+
+        return res.status(500).json({
+
+            success: false,
+
+            message: 'Failed to update status',
+
+            error: err.message
+
+        });
+    }
+};
+
+
+module.exports.cancelSOS = async (req, res) => {
+    try {
+        const report = await SOSReport.findById(
+            req.params.id
+        );
+
+
+        if (!report) {
+
+            return res.status(404).json({
+
+                success: false,
+
+                message: 'SOS report not found'
+
+            });
+        }
+
+
+        // Check ownership
+        const isOwner =
+            report.reporterId.toString() ===
+            req.user.id.toString();
+
+
+        // Check authority
+        const isAuthority =
+            req.user.role === 'authority';
+
+
+        if (!isOwner && !isAuthority) {
+
+            return res.status(403).json({
+
+                success: false,
+
+                message:
+                    'Not authorized to cancel this SOS report'
+
+            });
+        }
+
 
         report.status = 'resolved';
+
         report.cancelledAt = new Date();
+
         await report.save();
 
-        res.status(200).json({message: 'SOS report cancelled', sosReport: report});
+
+        return res.status(200).json({
+
+            success: true,
+
+            message: 'SOS report cancelled',
+
+            sosReport: report
+
+        });
 
     }
-    catch(err){
-        res.status(500).json({message: 'Failed to cancel SOS report', error: err.message});
+
+    catch (err) {
+
+        console.error('CANCEL SOS ERROR:', err);
+
+        return res.status(500).json({
+
+            success: false,
+
+            message: 'Failed to cancel SOS report',
+
+            error: err.message
+
+        });
     }
 };
-

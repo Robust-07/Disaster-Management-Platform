@@ -39,7 +39,7 @@ const sosReportSchema = new mongoose.Schema(
         },
         severityLabel: {
             type: String,
-            enum: ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
+            enum: ["LOW", "MEDIUM", "HIGH", "CRITICAL", "HEURISTIC_FALLBACK"],
             default: "LOW"
         },
         mlProbability: {

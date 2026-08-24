@@ -1,6 +1,6 @@
 require('dotenv').config();
-const connectDB = require("./config/db.js");
 const express = require('express');
+const connectDB = require("./config/db.js");
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
@@ -28,16 +28,7 @@ app.use('/api/risk-zones', require('./routes/riskzoneroutes.js'));
 app.use('/api/resources', require('./routes/resourceroutes'));
 app.use('/api/resource-requests', require('./routes/resourcerequestroutes'));
 app.use('/api/volunteers', require('./routes/volunteerroutes'));
-app.use('/api/campaigns', require('./routes/campaignRoutes'));
-
-
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    message: 'server is running'
-  });
-});
+app.use('/api/campaigns', require('./routes/campaignroutes'));
 
 
 const PORT = process.env.PORT;
