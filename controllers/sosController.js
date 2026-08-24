@@ -29,6 +29,8 @@ module.exports.createSOS = async(req,res) => {
             description,
             peopleCount: peopleCount || 1,
             photoUrl: photoUrl,
+            severityScore,
+            category,
             location: {
                 type: 'Point',
                 coordinates: [Number(longitude), Number(latitude)],
@@ -77,9 +79,7 @@ module.exports.getSOSById = async(req,res) => {
 
 module.exports.getMySOS = async(req, res) => {
     try{
-        const reports = await SOSReport.find().
-        populate({reporterId: req.user.id})
-        .sort({createdAt: -1});
+        const reports = await SOSReport.find({reporterId: req.user.id}).sort({createdAt: -1});
         res.status(200).json({count: reports.length, reports});
     }
     catch(err){

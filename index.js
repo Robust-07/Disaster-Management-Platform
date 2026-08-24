@@ -24,9 +24,12 @@ app.use(morgan('dev'));
 app.use('/api/auth', require('./routes/authroutes.js'));
 app.use('/api/sos', require('./routes/sosroutes.js'));
 app.use('/api/rescue', require('./routes/rescueroutes.js'));
-app.use('/api/shelter', require('./routes/shelterroutes.js'));
-app.use('/api/riskzones', require('./routes/riskzoneroutes.js'));
-app.use('/api/resource', require('./routes/resourceroutes.js'));
+app.use('/api/shelters', require('./routes/shelterroutes.js'));
+app.use('/api/risk-zones', require('./routes/riskzoneroutes.js'));
+app.use('/api/resources', require('./routes/resourceroutes'));
+app.use('/api/resource-requests', require('./routes/resourcerequestroutes'));
+app.use('/api/volunteers', require('./routes/volunteerroutes'));
+app.use('/api/campaigns', require('./routes/campaignRoutes'));
 
 
 // Health check
