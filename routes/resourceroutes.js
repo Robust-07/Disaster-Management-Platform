@@ -1,13 +1,8 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const {
-  createResource,
-  getNearbyResources,
-  getAllResources,
-  matchResources,
-  allocateResource,
-} = require('../controllers/resourceController');
-const { protect, authorize } = require('../middleware/authMiddleware');
+
+const {createResource, getNearByResources, getAllResources, matchResources, allocateResource,} = require('../controllers/resourceController');
+const { protect, authorize } = require('../middleware/authmiddleware');
 
 router.post('/', protect, authorize('ngo', 'authority'), createResource);
 router.get('/nearby', protect, getNearbyResources);

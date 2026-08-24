@@ -19,4 +19,5 @@ const volunteerSchema = new mongoose.Schema(
 );
 
 volunteerSchema.index({ location: '2dsphere' });
-module.exports = mongoose.model('Volunteer', volunteerSchema);
+const Volunteer = mongoose.model("Volunteer", volunteerSchema);
+module.exports = Volunteer;

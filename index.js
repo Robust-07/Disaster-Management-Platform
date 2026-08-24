@@ -9,7 +9,6 @@ connectDB();
 
 const User = require("./models/user.js");
 const sosReport = require("./models/report.js");
-const Resource = require('./models/Resource.js');
 
 
 const app = express();
@@ -43,6 +42,6 @@ app.get('/api/health', (req, res) => {
 
 const PORT = process.env.PORT;
 
-app.listen(PORT, (req,res)=>{
-  consol
-})
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});

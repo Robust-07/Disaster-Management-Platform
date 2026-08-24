@@ -33,7 +33,7 @@ module.exports.createResource = async (req, res) => {
 
 // @route  GET /api/resources/nearby?longitude=..&latitude=..&type=food&maxDistance=20000
 // @access Protected
-module.exports.getNearbyResources = async (req, res) => {
+module.exports.getNearByResources = async (req, res) => {
   try {
     const { longitude, latitude, type, maxDistance } = req.query;
 

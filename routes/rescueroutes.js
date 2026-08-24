@@ -1,16 +1,7 @@
 const express = require("express");
-
 const router = express.Router();
 
-const {
-  createRescueTeam,
-  getAllRescueTeams,
-  getRescueTeamById,
-  updateRescueTeam,
-  deleteRescueTeam,
-  updateTeamLocation,
-  getNearbyTeams,
-} = require("../controllers/rescueController");
+const {createRescueTeam, getAllRescueTeams, getRescueTeamById, updateRescueTeam, deleteRescueTeam, updateTeamLocation, getNearbyTeams} = require("../controllers/rescueController");
 
 router.post("/", createRescueTeam);
 router.get("/", getAllRescueTeams);

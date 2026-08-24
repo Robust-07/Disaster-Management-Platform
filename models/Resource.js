@@ -43,4 +43,5 @@ const resourceSchema = new mongoose.Schema(
 
 resourceSchema.index({ location: '2dsphere' });
 
-const Ressource = mongoose.model("Resource", resourceSchema.js);
+const Resource = mongoose.model("Resource", resourceSchema);
+module.exports = Resource;

@@ -1,7 +1,3 @@
-// Scores how good a match a Resource is for a ResourceRequest.
-// Same weighted-scoring pattern used for rescue-team allocation:
-// quantity fit + distance + transport availability.
-
 const EARTH_RADIUS_KM = 6371;
 
 const getDistanceKm = ([lon1, lat1], [lon2, lat2]) => {
@@ -19,7 +15,6 @@ const getDistanceKm = ([lon1, lat1], [lon2, lat2]) => {
 const scoreResourceMatch = (resource, request) => {
   let score = 0;
 
-  // Quantity fit — can this resource fully cover the need?
   const stillNeeded = request.quantityNeeded - request.quantityFulfilled;
   if (resource.quantity >= stillNeeded) {
     score += 40; // fully covers the request
