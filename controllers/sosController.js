@@ -108,12 +108,7 @@ module.exports.createSOS = async (req, res) => {
         });
     }
     catch (err) {
-        console.error('CREATE SOS ERROR:', err);
-        return res.status(500).json({
-            success: false,
-            message: 'Submission failed',
-            error: err.message
-        });
+        return res.status(500).json({success: false,message: 'Submission failed',error: err.message});
     }
 };
 
@@ -134,12 +129,7 @@ module.exports.getAllSOS = async (req, res) => {
         });
     }
     catch (err) {
-        console.error('GET ALL SOS ERROR:', err);
-        return res.status(500).json({
-            success: false,
-            message: 'Failed to fetch reports',
-            error: err.message
-        });
+        return res.status(500).json({success: false,message: 'Failed to fetch reports',error: err.message});
     }
 };
 
@@ -158,20 +148,10 @@ module.exports.getSOSById = async (req, res) => {
                 message: 'SOS report not found'
             });
         }
-
-
-        return res.status(200).json({
-            success: true,
-            report
-        });
+        return res.status(200).json({success: true,report});
     }
     catch (err) {
-        console.error('GET SOS BY ID ERROR:', err);
-        return res.status(500).json({
-            success: false,
-            message: 'Failed to fetch report',
-            error: err.message
-        });
+        return res.status(500).json({success: false,message: 'Failed to fetch report',error: err.message});
     }
 };
 
@@ -185,41 +165,22 @@ module.exports.getMySOS = async (req, res) => {
         });
     }
     catch (err) {
-        console.error('GET MY SOS ERROR:', err);
-        return res.status(500).json({
-            success: false,
-            message: 'Failed to fetch SOS reports',
-            error: err.message
-        });
+        return res.status(500).json({success: false,message: 'Failed to fetch SOS reports',error: err.message});
     }
 };
 
 module.exports.updateSOSStatus = async (req, res) => {
     try {
         const { status } = req.body;
-        const validStatuses = [
-            'pending',
-            'assigned',
-            'in-progress',
-            'resolved'
-        ];
-        if (
-            !status ||
-            !validStatuses.includes(status)
-        ) {
-            return res.status(400).json({
-                success: false,
-                message: `status must be one of: ${validStatuses.join(', ')}`
-            });
+        const validStatuses = ['pending','assigned','in-progress','resolved'];
+        if (!status ||!validStatuses.includes(status)) {
+            return res.status(400).json({success: false,message: `status must be one of: ${validStatuses.join(', ')}`});
         }
         const report = await SOSReport.findById(
             req.params.id
         );
         if (!report) {
-            return res.status(404).json({
-                success: false,
-                message: 'SOS report not found'
-            });
+            return res.status(404).json({success: false,message: 'SOS report not found'});
         }
         
         report.status = status;
@@ -228,19 +189,10 @@ module.exports.updateSOSStatus = async (req, res) => {
         const io = req.app.get('io');
         io.emit('status-update', { sosId: report._id, status: report.status });
         
-        return res.status(200).json({
-            success: true,
-            message: 'Status updated successfully',
-            sosReport: report
-        });
+        return res.status(200).json({success: true, message: 'Status updated successfully', sosReport: report});
     }
     catch (err) {
-        console.error('UPDATE SOS STATUS ERROR:', err);
-        return res.status(500).json({
-            success: false,
-            message: 'Failed to update status',
-            error: err.message
-        });
+        return res.status(500).json({success: false, message: 'Failed to update status', error: err.message});
     }
 };
 
@@ -264,24 +216,12 @@ module.exports.cancelSOS = async (req, res) => {
                     'Not authorized to cancel this SOS report'
             });
         }
-        
         report.status = 'resolved';
         report.cancelledAt = new Date();
         await report.save();
-        
-        return res.status(200).json({
-            success: true,
-            message: 'SOS report cancelled',
-            sosReport: report
-        });
+        return res.status(200).json({success: true,message: 'SOS report cancelled',sosReport: report});
     }
-
     catch (err) {
-        console.error('CANCEL SOS ERROR:', err);
-        return res.status(500).json({
-            success: false,
-            message: 'Failed to cancel SOS report',
-            error: err.message
-        });
+        return res.status(500).json({success: false, message: 'Failed to cancel SOS report', error: err.message});
     }
 };

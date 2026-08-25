@@ -7,27 +7,20 @@ const generateToken = (userId, role)=>{
     });
 };
 
-//post /api/auth/signup
 module.exports.signup = async(req,res) => {
     try{
         const {name, email, password, role, phone, longitude, latitude}  = req.body;
-
         if(!name || !email || !phone || !password){
             return res.status(400).json({message: 'missing required fields'});
         }
-
-         // Email format validation
         const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         if (!emailRegex.test(email)) {
             return res.status(400).json({ message: 'Invalid email format' });
         }
-
-        // Phone format validation
         const phoneRegex = /^[6-9]\d{9}$/;
         if (!phoneRegex.test(phone)) {
             return res.status(400).json({ message: 'Invalid phone number format' });
         }
-        
         const existingUser = await User.findOne({email});
         if (existingUser){
             return res.status(409).json({message: 'email already registered'});
@@ -47,7 +40,6 @@ module.exports.signup = async(req,res) => {
             },
         });
         const token = generateToken(user._id, user.role);
-
         res.status(201).json({
             token,
             user: {
@@ -64,7 +56,6 @@ module.exports.signup = async(req,res) => {
     }
 };
 
-//post /api/auth/login
 module.exports.login = async(req,res) => {
     try{
         const{email, password} = req.body;
@@ -89,15 +80,12 @@ module.exports.login = async(req,res) => {
                 role: user.role,
             },
         });
-
-
     }
     catch(err){
         res.status(500).json({message: 'Login failed', error: err.message});
     }
 };
 
-//get /api/auth/me
 module.exports.getMe = async(req,res) => {
     const user = await User.findById(req.user.id);
     res.status(200).json({user});

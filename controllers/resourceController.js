@@ -1,6 +1,6 @@
-const Resource = require('../models/Resource');
-const ResourceRequest = require('../models/ResourceRequest');
-const { scoreResourceMatch } = require('../utils/resourceMatching');
+const Resource = require('../models/Resource.js');
+const ResourceRequest = require('../models/ResourceRequest.js');
+const { scoreResourceMatch } = require('../utils/resourceMatching.js');
 
 module.exports.createResource = async (req, res) => {
     try {

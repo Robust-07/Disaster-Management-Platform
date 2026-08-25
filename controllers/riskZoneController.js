@@ -3,13 +3,11 @@ const RiskZone = require('../models/riskzone.js');
 module.exports.createRiskZone = async (req, res) => {
     try {
         const { areaName, longitude, latitude, riskLevel, description } = req.body;
-
         if (!areaName || longitude === undefined || latitude === undefined || !riskLevel) {
             return res.status(400).json({
                 message: 'areaName, longitude, latitude and riskLevel are required',
             });
         }
-
         const riskZone = await RiskZone.create({
             areaName,
             riskLevel,
@@ -43,16 +41,13 @@ module.exports.getAllRiskZones = async (req, res) => {
 module.exports.updateRiskZone = async (req, res) => {
     try {
         const { riskLevel, description, active } = req.body;
-
         const riskZone = await RiskZone.findById(req.params.id);
         if (!riskZone) {
             return res.status(404).json({ message: 'Risk zone not found' });
         }
-
         if (riskLevel) riskZone.riskLevel = riskLevel;
         if (description !== undefined) riskZone.description = description;
         if (active !== undefined) riskZone.active = active;
-
         await riskZone.save();
         res.status(200).json({ riskZone });
     } 

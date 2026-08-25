@@ -1,4 +1,4 @@
-const Campaign = require('../models/Campaign');
+const Campaign = require('../models/Campaign.js');
 
 module.exports.createCampaign = async (req, res) => {
 	try {
@@ -14,8 +14,7 @@ module.exports.createCampaign = async (req, res) => {
       		targetAmount,
       		createdBy: req.user.id,
     	});
-
-    	res.status(201).json({ campaign });
+		res.status(201).json({ campaign });
  	} 
 	catch (err) {
     	res.status(500).json({ message: 'Failed to create campaign', error: err.message });
@@ -27,8 +26,7 @@ module.exports.getAllCampaigns = async (req, res) => {
     	const campaigns = await Campaign.find()
       	.populate('createdBy', 'name')
       	.sort({ createdAt: -1 });
-
-    	res.status(200).json({ count: campaigns.length, campaigns });
+		res.status(200).json({ count: campaigns.length, campaigns });
   	} 
 	catch (err) {
     	res.status(500).json({ message: 'Failed to fetch campaigns', error: err.message });
@@ -41,8 +39,7 @@ module.exports.getCampaignById = async (req, res) => {
     	if (!campaign) {
       		return res.status(404).json({ message: 'Campaign not found' });
     	}
-
-    	res.status(200).json({ campaign });
+		res.status(200).json({ campaign });
   	} 
 	catch (err) {
     	res.status(500).json({ message: 'Failed to fetch campaign', error: err.message });
@@ -64,8 +61,7 @@ module.exports.donateToCampaign = async (req, res) => {
 
 		const io = req.app.get('io');
 		io.emit('campaign-donation', { campaignId: campaign._id, raisedAmount: campaign.raisedAmount });
-
-    	res.status(200).json({ message: 'Donation recorded', campaign });
+		res.status(200).json({ message: 'Donation recorded', campaign });
   	} 
 	catch (err) {
     	res.status(500).json({ message: 'Failed to process donation', error: err.message });
@@ -80,8 +76,7 @@ module.exports.verifyCampaign = async (req, res) => {
     	}
 		campaign.verified = true;
     	await campaign.save();
-
-    	res.status(200).json({ message: 'Campaign verified', campaign });
+		res.status(200).json({ message: 'Campaign verified', campaign });
   	} 
 	catch (err) {
     	res.status(500).json({ message: 'Failed to verify campaign', error: err.message });
