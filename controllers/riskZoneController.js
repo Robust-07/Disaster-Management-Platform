@@ -20,6 +20,9 @@ module.exports.createRiskZone = async (req, res) => {
             },
         });
 
+        const io = req.app.get('io');
+        io.emit('new-risk-zone', riskZone);
+
         res.status(201).json({ riskZone });
     }
     catch (err) {

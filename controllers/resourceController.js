@@ -181,17 +181,20 @@ module.exports.allocateResource = async (req, res) => {
       return res.status(400).json({ message: 'Resource does not have enough quantity' });
     }
 
-    // Update resource
+   
     resource.quantity -= quantityAllocated;
     if (resource.quantity === 0) resource.status = 'depleted';
     await resource.save();
 
-    // Update request
+   
     request.quantityFulfilled += Number(quantityAllocated);
     request.matchedResourceId = resource._id;
     request.status =
       request.quantityFulfilled >= request.quantityNeeded ? 'fulfilled' : 'partially-fulfilled';
     await request.save();
+
+    const io = req.app.get('io');
+    io.emit('resource-allocated', { requestId: request._id, resourceId: resource._id });
 
     res.status(200).json({ message: 'Resource allocated', request, resource });
   } catch (err) {

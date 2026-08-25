@@ -5,7 +5,7 @@ const {createResource, getNearByResources, getAllResources, matchResources, allo
 const { protect, authorize } = require('../middleware/authmiddleware');
 
 router.post('/', protect, authorize('ngo', 'authority'), createResource);
-router.get('/nearby', protect, getNearbyResources);
+router.get('/nearby', protect, getNearByResources);
 router.get('/', protect, getAllResources);
 router.post('/match', protect, authorize('authority'), matchResources);
 router.post('/allocate', protect, authorize('authority'), allocateResource);

@@ -1,9 +1,21 @@
 require('dotenv').config();
 const express = require('express');
+const http = require("http");
+const {Server} = require("socket.io");
 const connectDB = require("./config/db.js");
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+
+const app = express();
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST'],
+  },
+});
 
 connectDB();
 
@@ -11,7 +23,7 @@ const User = require("./models/user.js");
 const sosReport = require("./models/report.js");
 
 
-const app = express();
+
 
 app.use(express.json());
 app.use(cors());
@@ -30,9 +42,19 @@ app.use('/api/resource-requests', require('./routes/resourcerequestroutes'));
 app.use('/api/volunteers', require('./routes/volunteerroutes'));
 app.use('/api/campaigns', require('./routes/campaignroutes'));
 
+app.set('io', io);
+
+io.on('connection', (socket) => {
+  console.log('Client connected:', socket.id);
+
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
+  });
+});
+
 
 const PORT = process.env.PORT;
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });

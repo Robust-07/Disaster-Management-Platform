@@ -50,7 +50,6 @@ module.exports.createSOS = async (req, res) => {
         let photoUrl = null;
 
         if (req.file) {
-
             const result = await uploadBufferToCloudinary(
                 req.file.buffer
             );
@@ -76,7 +75,6 @@ module.exports.createSOS = async (req, res) => {
         });
 
         const sosReport = await SOSReport.create({
-
             reporterId: req.user.id,
             description,
             peopleCount: peopleTrapped,
@@ -95,122 +93,79 @@ module.exports.createSOS = async (req, res) => {
                 ]
             }
         });
+
+        const io = req.app.get('io');
+        io.emit('new-sos', sosReport);
+
         return res.status(201).json({
-
             success: true,
-
             message: 'SOS submitted successfully',
-
             sosReport,
-
             mlPrediction: {
-
                 severity: mlResult.severityLabel,
-
                 severityScore: mlResult.severityScore,
-
                 probability: mlResult.mlProbability,
-
                 status: mlResult.mlStatus,
-
                 isMlPredicted: mlResult.isMlPredicted
-
             }
-
         });
-
     }
-
     catch (err) {
-
         console.error('CREATE SOS ERROR:', err);
-
         return res.status(500).json({
-
             success: false,
-
             message: 'Submission failed',
-
             error: err.message
-
         });
     }
 };
 
 module.exports.getAllSOS = async (req, res) => {
-
     try {
-
         const reports = await SOSReport.find()
-
-            .populate(
+        .populate(
                 'reporterId',
                 'name phone email'
             )
-
             .sort({
                 createdAt: -1
             });
-
-
         return res.status(200).json({
-
             success: true,
-
             count: reports.length,
-
             reports
-
         });
-
     }
-
     catch (err) {
-
         console.error('GET ALL SOS ERROR:', err);
-
         return res.status(500).json({
-
             success: false,
-
             message: 'Failed to fetch reports',
-
             error: err.message
-
         });
     }
 };
 
 module.exports.getSOSById = async (req, res) => {
-
     try {
-
         const report = await SOSReport.findById(
             req.params.id
         ).populate(
             'reporterId',
             'name phone email'
         );
-
-
         if (!report) {
 
             return res.status(404).json({
-
                 success: false,
-
                 message: 'SOS report not found'
-
             });
         }
 
 
         return res.status(200).json({
-
             success: true,
-
             report
-
         });
 
     }
@@ -311,32 +266,23 @@ module.exports.updateSOSStatus = async (req, res) => {
 
 
         if (!report) {
-
             return res.status(404).json({
-
                 success: false,
-
                 message: 'SOS report not found'
-
             });
         }
-
-
+        
         report.status = status;
-
         await report.save();
 
-
+        const io = req.app.get('io');
+        io.emit('status-update', { sosId: report._id, status: report.status });
+        
         return res.status(200).json({
-
             success: true,
-
             message: 'Status updated successfully',
-
             sosReport: report
-
         });
-
     }
 
     catch (err) {

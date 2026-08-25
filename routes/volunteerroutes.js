@@ -7,7 +7,7 @@ const {
   matchVolunteers,
   updateAvailability,
 } = require('../controllers/volunteerController');
-const { protect, authorize } = require('../middleware/authMiddleware');
+const { protect, authorize } = require('../middleware/authmiddleware');
 
 router.post('/', protect, createVolunteer);
 router.get('/nearby', protect, getNearbyVolunteers);
