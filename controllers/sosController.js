@@ -39,8 +39,6 @@ module.exports.createSOS = async (req, res) => {
         const buildingDamage = Number(building_damage) || 0;
         const hoursTrapped = Number(hours_trapped) || 0;
 
-        // communication_available can be 0
-        // so don't use || here
         const communicationAvailable =
             communication_available === undefined ||
             communication_available === null
@@ -53,7 +51,6 @@ module.exports.createSOS = async (req, res) => {
             const result = await uploadBufferToCloudinary(
                 req.file.buffer
             );
-
             photoUrl = result.secure_url;
         }
 
@@ -167,104 +164,57 @@ module.exports.getSOSById = async (req, res) => {
             success: true,
             report
         });
-
     }
-
     catch (err) {
-
         console.error('GET SOS BY ID ERROR:', err);
-
         return res.status(500).json({
-
             success: false,
-
             message: 'Failed to fetch report',
-
             error: err.message
-
         });
     }
 };
 
 module.exports.getMySOS = async (req, res) => {
-
     try {
-
-        const reports = await SOSReport.find({
-
-            reporterId: req.user.id
-
-        }).sort({
-
-            createdAt: -1
-
-        });
-
-
+        const reports = await SOSReport.find({reporterId: req.user.id}).sort({createdAt: -1});
         return res.status(200).json({
-
             success: true,
-
             count: reports.length,
-
             reports
-
         });
-
     }
-
     catch (err) {
-
         console.error('GET MY SOS ERROR:', err);
-
         return res.status(500).json({
-
             success: false,
-
             message: 'Failed to fetch SOS reports',
-
             error: err.message
-
         });
     }
 };
 
 module.exports.updateSOSStatus = async (req, res) => {
-
     try {
-
         const { status } = req.body;
-
-
         const validStatuses = [
             'pending',
             'assigned',
             'in-progress',
             'resolved'
         ];
-
-
         if (
             !status ||
             !validStatuses.includes(status)
         ) {
-
             return res.status(400).json({
-
                 success: false,
-
-                message:
-                    `status must be one of: ${validStatuses.join(', ')}`
-
+                message: `status must be one of: ${validStatuses.join(', ')}`
             });
         }
-
-
         const report = await SOSReport.findById(
             req.params.id
         );
-
-
         if (!report) {
             return res.status(404).json({
                 success: false,
@@ -284,98 +234,54 @@ module.exports.updateSOSStatus = async (req, res) => {
             sosReport: report
         });
     }
-
     catch (err) {
-
         console.error('UPDATE SOS STATUS ERROR:', err);
-
         return res.status(500).json({
-
             success: false,
-
             message: 'Failed to update status',
-
             error: err.message
-
         });
     }
 };
-
 
 module.exports.cancelSOS = async (req, res) => {
     try {
         const report = await SOSReport.findById(
             req.params.id
         );
-
-
         if (!report) {
-
             return res.status(404).json({
-
                 success: false,
-
                 message: 'SOS report not found'
-
             });
         }
-
-
-        // Check ownership
-        const isOwner =
-            report.reporterId.toString() ===
-            req.user.id.toString();
-
-
-        // Check authority
-        const isAuthority =
-            req.user.role === 'authority';
-
-
+        const isOwner = report.reporterId.toString() === req.user.id.toString();
+        const isAuthority = req.user.role === 'authority';
         if (!isOwner && !isAuthority) {
-
             return res.status(403).json({
-
                 success: false,
-
                 message:
                     'Not authorized to cancel this SOS report'
-
             });
         }
-
-
+        
         report.status = 'resolved';
-
         report.cancelledAt = new Date();
-
         await report.save();
-
-
+        
         return res.status(200).json({
-
             success: true,
-
             message: 'SOS report cancelled',
-
             sosReport: report
-
         });
-
     }
 
     catch (err) {
-
         console.error('CANCEL SOS ERROR:', err);
-
         return res.status(500).json({
-
             success: false,
-
             message: 'Failed to cancel SOS report',
-
             error: err.message
-
         });
     }
 };
