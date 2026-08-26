@@ -21,7 +21,10 @@ function Signup() {
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        // Backend will be connected later
+        // Temporary frontend-only signup
+        localStorage.setItem("userName", formData.name);
+        localStorage.setItem("userEmail", formData.email);
+
         console.log("Signup submitted:", formData);
     };
 

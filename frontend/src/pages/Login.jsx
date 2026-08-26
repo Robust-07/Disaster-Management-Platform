@@ -1,19 +1,41 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+
 
 function Login() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const navigate = useNavigate();
 
     const handleSubmit = (e) => {
-        e.preventDefault();
+    e.preventDefault();
 
-        // Backend will be connected later
-        console.log("Login submitted:", {
-            email,
-            password,
-        });
-    };
+    // Temporary frontend-only login
+
+    const storedEmail = localStorage.getItem("userEmail");
+    const storedName = localStorage.getItem("userName");
+
+    if (storedEmail === email && storedName) {
+
+        navigate("/citizen-dashboard");
+
+    } else {
+
+        // Temporary fallback
+        // If no signup data exists, use email prefix
+        localStorage.setItem(
+            "userName",
+            email.split("@")[0]
+        );
+
+        localStorage.setItem(
+            "userEmail",
+            email
+        );
+
+        navigate("/citizen-dashboard");
+    }
+};
 
     return (
         <div className="auth-page">

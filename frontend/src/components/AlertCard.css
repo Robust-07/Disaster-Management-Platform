@@ -1,0 +1,62 @@
+.alert-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 15px;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  border-left: 4px solid;
+}
+
+.alert-card.warning {
+  background: #fffbeb;
+  border-left-color: #f59e0b;
+}
+
+.alert-card.danger {
+  background: #fef2f2;
+  border-left-color: #ef4444;
+}
+
+.alert-card.info {
+  background: #eff6ff;
+  border-left-color: #3b82f6;
+}
+
+.alert-card.safe {
+  background: #ecfdf5;
+  border-left-color: #10b981;
+}
+
+.alert-card-icon {
+  font-size: 22px;
+}
+
+.alert-card-content {
+  flex: 1;
+}
+
+.alert-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.alert-card-header h3 {
+  margin: 0;
+  font-size: 14px;
+  color: #111827;
+}
+
+.alert-card-header span {
+  font-size: 10px;
+  color: #9ca3af;
+  white-space: nowrap;
+}
+
+.alert-card-content p {
+  margin: 6px 0 0;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.5;
+}

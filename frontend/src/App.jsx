@@ -1,13 +1,14 @@
+
 import {
     BrowserRouter,
     Routes,
-    Route,
-    Navigate
+    Route
 } from "react-router-dom";
 
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import CitizenDashboard from "./pages/CitizenDashboard";
 
 function App() {
 
@@ -15,13 +16,14 @@ function App() {
         <BrowserRouter>
 
             <Routes>
-                <Route path="/" element={<Home />} />
-                
+
+                {/* Home */}
                 <Route
                     path="/"
-                    element={<Navigate to="/login" />}
+                    element={<Home />}
                 />
 
+                {/* Authentication */}
                 <Route
                     path="/login"
                     element={<Login />}
@@ -32,8 +34,12 @@ function App() {
                     element={<Signup />}
                 />
 
-            </Routes>
-
+                {/* Citizen Dashboard */}
+                <Route
+                    path="/citizen-dashboard"
+                    element={<CitizenDashboard />}
+                />
+        </Routes>
         </BrowserRouter>
     );
 }
