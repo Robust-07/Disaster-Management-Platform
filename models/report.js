@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+
 const sosReportSchema = new mongoose.Schema(
     {
         reporterId:{
@@ -16,7 +17,6 @@ const sosReportSchema = new mongoose.Schema(
                 type: [Number], // [longitude, latitude]
                 required: true,
             },
-            
         },
         description: {
             type: String,

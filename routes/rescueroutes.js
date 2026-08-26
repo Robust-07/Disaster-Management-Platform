@@ -4,14 +4,14 @@ const router = express.Router();
 const {createRescueTeam, getAllRescueTeams, getRescueTeamById, updateRescueTeam, deleteRescueTeam, updateTeamLocation, getNearbyTeams, getMyAssignments, linkUserToTeam} = require("../controllers/rescueController");
 const {protect, authorize} = require('../middleware/authmiddleware.js');
 
-router.post("/", createRescueTeam);
-router.get("/", getAllRescueTeams);
+router.post("/", protect, authorize('authority'), createRescueTeam);
+router.get("/", protect, authorize('authority'), getAllRescueTeams);
 router.get('/nearby', protect, authorize('authority'), getNearbyTeams);
 router.get('/my-assignments', protect, authorize('rescuer'), getMyAssignments);
-router.get("/:id", getRescueTeamById);
-router.patch("/:id", updateRescueTeam);
-router.patch("/:id/location", updateTeamLocation);
-router.delete("/:id", deleteRescueTeam);
+router.get("/:id", protect, authorize('authority'), getRescueTeamById);
+router.patch("/:id", protect, authorize('authority'), updateRescueTeam);
+router.patch("/:id/location", protect, authorize('rescuer'), updateTeamLocation);
 router.patch('/:id/link-user', protect, authorize('authority'), linkUserToTeam);
+router.delete("/:id", protect, authorize('authority'), deleteRescueTeam);
 
 module.exports = router;

@@ -64,102 +64,61 @@ module.exports.getAllResources = async (req, res) => {
 
 module.exports.createResourceRequest = async (req, res) => {
     try {
-        const {campName, type, quantityNeeded, longitude, latitude, consumptionRatePerHour, population, incomingSupply, peoplePerUnit, currentStock, dailyConsumption } = req.body;
+        const {campName, type, quantityNeeded, longitude, latitude, consumptionRatePerHour, population, incomingSupply, peoplePerUnit, currentStock, dailyConsumption, urgency } = req.body;
 
         if (!campName || !type || quantityNeeded === undefined || longitude === undefined || latitude === undefined || population === undefined || peoplePerUnit === undefined) {
             return res.status(400).json({
                 message: 'campName, type, quantityNeeded, longitude, latitude, population and peoplePerUnit are required',
             });
         }
-
-         const shortagePrediction = await predictShortage({
-
+        const shortagePrediction = await predictShortage({
             population: population || 0,
-
             currentStock: currentStock || 0,
-
             dailyConsumption: dailyConsumption || 0,
-
             incomingSupply: incomingSupply || 0,
-
             peoplePerUnit: peoplePerUnit || 1
         });
         const request = await ResourceRequest.create({
-
             requesterId: req.user.id,
-
             campName,
-
             type,
-
             quantityNeeded,
-
             quantityFulfilled: 0,
-
             population: population || 0,
-
             incomingSupply: incomingSupply || 0,
-
             peoplePerUnit: peoplePerUnit || 1,
-
             currentStock: currentStock || 0,
-
             dailyConsumption: dailyConsumption || 0,
-
-            consumptionRatePerHour:
-                consumptionRatePerHour || 0,
-
-            shortageHours:
-                shortagePrediction.hoursUntilShortage,
-
-            shortageStatus:
-                shortagePrediction.status,
-
-            isShortageMlPredicted:
-                shortagePrediction.success,
-
-            shortageMlStatus:
-                shortagePrediction.mlStatus,
-
+            consumptionRatePerHour: consumptionRatePerHour || 0,
+            shortageHours: shortagePrediction.hoursUntilShortage,
+            shortageStatus: shortagePrediction.status,
+            isShortageMlPredicted: shortagePrediction.success,
+            shortageMlStatus: shortagePrediction.mlStatus,
+            urgency: urgency || 'medium',
             location: {
                 type: 'Point',
-
                 coordinates: [
                     Number(longitude),
                     Number(latitude)
                 ]
             }
         });
-
         res.status(201).json({
-
             message: 'Resource request created successfully',
-
             request,
-
             shortagePrediction: {
-                hoursUntilShortage:
-                    shortagePrediction.hoursUntilShortage,
-
-                status:
-                    shortagePrediction.status,
-
-                mlStatus:
-                    shortagePrediction.mlStatus,
-
-                isMlPredicted:
-                    shortagePrediction.success
+                hoursUntilShortage: shortagePrediction.hoursUntilShortage,
+                status: shortagePrediction.status,
+                mlStatus: shortagePrediction.mlStatus,
+                isMlPredicted: shortagePrediction.success
             }
         });
     } 
 	catch (err) {
-
         console.error(err);
-
         res.status(500).json({
             message:
                 'Failed to create resource request',
-
             error:
                 err.message
         });
@@ -168,7 +127,9 @@ module.exports.createResourceRequest = async (req, res) => {
 
 module.exports.getAllResourceRequests = async (req, res) => {
     try{
-        const requests = await ResourceRequest.find().populate('requesterId', 'name phone email').sort({ createdAt: -1 });
+        const urgencyRank = { critical: 4, high: 3, medium: 2, low: 1 };
+        const requests = await ResourceRequest.find().populate('requesterId', 'name phone email');
+        requests.sort((a, b) => urgencyRank[b.urgency] - urgencyRank[a.urgency] || b.createdAt - a.createdAt);
         res.status(200).json({ count: requests.length, requests });
     } 
 	catch (err) {

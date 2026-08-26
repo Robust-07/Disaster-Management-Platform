@@ -5,7 +5,7 @@ const {createVolunteer, getNearbyVolunteers, getAllVolunteers, matchVolunteers, 
 const { protect, authorize } = require('../middleware/authmiddleware');
 
 router.post('/', protect, createVolunteer);
-router.get('/nearby', protect, getNearbyVolunteers);
+router.get('/nearby', protect, authorize('authority'), getNearbyVolunteers);
 router.get('/', protect, authorize('authority', 'ngo'), getAllVolunteers);
 router.post('/match', protect, authorize('authority'), matchVolunteers);
 router.patch('/:id/availability', protect, updateAvailability);
