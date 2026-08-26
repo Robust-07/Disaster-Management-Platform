@@ -1,12 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const {
-  createVolunteer,
-  getNearbyVolunteers,
-  getAllVolunteers,
-  matchVolunteers,
-  updateAvailability,
-} = require('../controllers/volunteerController');
+
+const {createVolunteer, getNearbyVolunteers, getAllVolunteers, matchVolunteers, updateAvailability} = require('../controllers/volunteerController');
 const { protect, authorize } = require('../middleware/authmiddleware');
 
 router.post('/', protect, createVolunteer);

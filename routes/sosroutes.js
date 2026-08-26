@@ -1,13 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const {
-    createSOS, 
-    getAllSOS,
-    getSOSById,
-    getMySOS,
-    updateSOSStatus,
-    cancelSOS
-} = require('../controllers/sosController.js');
+
+const {createSOS, getAllSOS, getSOSById, getMySOS, updateSOSStatus, cancelSOS} = require('../controllers/sosController.js');
 const {protect, authorize} = require('../middleware/authmiddleware.js');
 const upload = require('../middleware/storagemiddleware.js');
 
