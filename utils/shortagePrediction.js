@@ -1,82 +1,120 @@
-const predictShortage = async(features) => {
+const predictShortage = async (features) => {
     const mlServiceUrl = process.env.ML_SERVICE_URL;
+
     const payload = {
-        population: Number(features.population),
-        current_stock: Number(features.currentstock),
-        daily_consumption: Number(features.dailycnsumption),
-        incoming_supply: Number(features.incomingsupply),
-        people_per_unit: Number(features.peopleperunit)
+        population: Number(features.population) || 0,
+        current_stock: Number(features.currentStock) || 0,
+        daily_consumption: Number(features.dailyConsumption) || 0,
+        incoming_supply: Number(features.incomingSupply) || 0,
+        people_per_unit: Number(features.peoplePerUnit) || 1
     };
+
     const controller = new AbortController();
+
     const timeoutId = setTimeout(() => {
         controller.abort();
-    },3000);
+    }, 3000);
 
-    try{
-        const respomse = await fetch(
+    try {
+        const response = await fetch(
             `${mlServiceUrl}/predict/shortage`,
             {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application-json'
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(payload),
                 signal: controller.signal
             }
         );
+
         clearTimeout(timeoutId);
 
-        if (!response.ok){
+        if (!response.ok) {
             throw new Error(
                 `ML Service HTTP error: ${response.status}`
             );
         }
+
         const data = await response.json();
-        if (data && data.success && data.prediction){
-            return{
+
+        if (data && data.success && data.prediction) {
+
+            return {
                 success: true,
-                hoursUntilShortage: Number(data.prediction.hours_unitl_shortage),
-                status: String(data.prediction.status),
-                mlStatus: "Success"
+
+                hoursUntilShortage:
+                    Number(data.prediction.hours_until_shortage),
+
+                status:
+                    String(data.prediction.status),
+
+                mlStatus: 'SUCCESS'
             };
         }
-        throw new Error("Invalid ML service response");
 
+        throw new Error('Invalid ML service response');
     }
-    catch(err){
+
+    catch (err) {
         clearTimeout(timeoutId);
-        console.warn('[Shoratge ML Warning]',
+
+        console.warn(
+            '[Shortage ML Warning]',
             err.message
         );
-        const availableStock = payload.current_stock + payload.incoming_supply;
+
+        // -----------------------------
+        // MANUAL FALLBACK
+        // -----------------------------
+
+        const availableStock =
+            payload.current_stock +
+            payload.incoming_supply;
+
         let hoursUntilShortage;
-        if (payload.daily_consumption<=0){
+
+        if (payload.daily_consumption <= 0) {
             hoursUntilShortage = 999;
         }
-        else{
-            const dailyRequirement = payload.daily_consumption;
-            const days = availableStock / dailyRequirement;
-            hursUntilShortage = days * 24;
+        else {
+            const dailyRequirement =
+                payload.daily_consumption;
+
+            const days =
+                availableStock / dailyRequirement;
+
+            hoursUntilShortage =
+                days * 24;
         }
-        hoursUntilShortage = Math.max(0, hoursUntilShortage);
+
+        hoursUntilShortage =
+            Math.max(0, hoursUntilShortage);
+
         let status;
-        if (hoursUntilShortage<=2){
-            status = 'Critical';
+
+        if (hoursUntilShortage <= 2) {
+            status = 'CRITICAL';
         }
-        else if(hoursUntilShortage<=6){
-            status = 'Warning';
+        else if (hoursUntilShortage <= 6) {
+            status = 'WARNING';
         }
-        else if(hoursUntilShortage<=24){
-            status = 'Monitor'
+        else if (hoursUntilShortage <= 24) {
+            status = 'MONITOR';
         }
         else {
-            status = 'Safe';
+            status = 'SAFE';
         }
+
         return {
             success: false,
-            hoursUntilShortage: Math.round(hoursUntilShortage * 100)/100,
+
+            hoursUntilShortage:
+                Math.round(hoursUntilShortage * 100) / 100,
+
             status,
-            mlStatus: 'Fallback_Manual'
+
+            mlStatus: 'FALLBACK_MANUAL'
         };
     }
 };

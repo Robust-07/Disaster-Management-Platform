@@ -1,6 +1,7 @@
 const Resource = require('../models/Resource.js');
 const ResourceRequest = require('../models/ResourceRequest.js');
-const { scoreResourceMatch } = require('../utils/resourceMatching.js');
+const { scoreResourceMatch, getDistanceKm } = require('../utils/resourceMatching.js');
+const predictShortage = require("../utils/shortagePrediction.js");
 
 module.exports.createResource = async (req, res) => {
     try {
@@ -63,30 +64,105 @@ module.exports.getAllResources = async (req, res) => {
 
 module.exports.createResourceRequest = async (req, res) => {
     try {
-        const { campName, type, quantityNeeded, longitude, latitude, consumptionRatePerHour } = req.body;
+        const {campName, type, quantityNeeded, longitude, latitude, consumptionRatePerHour, population, incomingSupply, peoplePerUnit, currentStock, dailyConsumption } = req.body;
 
-        if (!campName || !type || quantityNeeded === undefined || longitude === undefined || latitude === undefined) {
+        if (!campName || !type || quantityNeeded === undefined || longitude === undefined || latitude === undefined || population === undefined || peoplePerUnit === undefined) {
             return res.status(400).json({
-                message: 'campName, type, quantityNeeded, longitude and latitude are required',
+                message: 'campName, type, quantityNeeded, longitude, latitude, population and peoplePerUnit are required',
             });
         }
 
+         const shortagePrediction = await predictShortage({
+
+            population: population || 0,
+
+            currentStock: currentStock || 0,
+
+            dailyConsumption: dailyConsumption || 0,
+
+            incomingSupply: incomingSupply || 0,
+
+            peoplePerUnit: peoplePerUnit || 1
+        });
         const request = await ResourceRequest.create({
+
             requesterId: req.user.id,
+
             campName,
+
             type,
+
             quantityNeeded,
-            consumptionRatePerHour: consumptionRatePerHour || 0,
+
+            quantityFulfilled: 0,
+
+            population: population || 0,
+
+            incomingSupply: incomingSupply || 0,
+
+            peoplePerUnit: peoplePerUnit || 1,
+
+            currentStock: currentStock || 0,
+
+            dailyConsumption: dailyConsumption || 0,
+
+            consumptionRatePerHour:
+                consumptionRatePerHour || 0,
+
+            shortageHours:
+                shortagePrediction.hoursUntilShortage,
+
+            shortageStatus:
+                shortagePrediction.status,
+
+            isShortageMlPredicted:
+                shortagePrediction.success,
+
+            shortageMlStatus:
+                shortagePrediction.mlStatus,
+
             location: {
                 type: 'Point',
-                coordinates: [Number(longitude), Number(latitude)],
-            },
+
+                coordinates: [
+                    Number(longitude),
+                    Number(latitude)
+                ]
+            }
         });
 
-        res.status(201).json({ request });
+        res.status(201).json({
+
+            message: 'Resource request created successfully',
+
+            request,
+
+            shortagePrediction: {
+                hoursUntilShortage:
+                    shortagePrediction.hoursUntilShortage,
+
+                status:
+                    shortagePrediction.status,
+
+                mlStatus:
+                    shortagePrediction.mlStatus,
+
+                isMlPredicted:
+                    shortagePrediction.success
+            }
+        });
     } 
 	catch (err) {
-        res.status(500).json({ message: 'Failed to create resource request', error: err.message });
+
+        console.error(err);
+
+        res.status(500).json({
+            message:
+                'Failed to create resource request',
+
+            error:
+                err.message
+        });
     }
 };
 
@@ -173,23 +249,50 @@ module.exports.getShortageAlerts = async (req, res) => {
       		status: { $in: ['open', 'partially-fulfilled'] },
       		consumptionRatePerHour: { $gt: 0 },
     	});
-		const alerts = requests
-      	.map((r) => {
-        	const remaining = r.quantityFulfilled; // what's currently on hand
-        	const hoursLeft = remaining / r.consumptionRatePerHour;
-        	return {
-          		requestId: r._id,
-          		campName: r.campName,
-          		type: r.type,
-          		remaining,
-          		consumptionRatePerHour: r.consumptionRatePerHour,
-          		hoursUntilShortage: Math.round(hoursLeft * 10) / 10,
-        	};
-      	})
-      	.filter((a) => a.hoursUntilShortage < 24) // flag anything running out within a day
-      	.sort((a, b) => a.hoursUntilShortage - b.hoursUntilShortage);
-
-    	res.status(200).json({ count: alerts.length, alerts });
+		const alerts = [];
+        for (const r of requests) {
+            const currentStock =
+                Number(r.quantityFulfilled) || 0;
+                const prediction = await predictShortage({
+                    population: Number(r.population) || 0,
+                    currentStock: currentStock,
+                    dailyConsumption: Number(r.consumptionRatePerHour) * 24,
+                    incomingSupply: Number(r.incomingSupply) || 0,
+                    peoplePerUnit: Number(r.peoplePerUnit) || 1
+                });
+                if (!prediction.success) {
+                    console.warn(`Shortage ML failed for request ${r._id}`);
+                }
+                const hoursUntilShortage = Number(prediction.hoursUntilShortage);
+                let status = 'SAFE';
+                if (hoursUntilShortage <= 2) {
+                    status = 'CRITICAL';
+                }
+                else if (hoursUntilShortage <= 6) {
+                    status = 'WARNING';
+                }
+                else if (hoursUntilShortage <= 24) {
+                    status = 'MONITOR';
+                }
+                if (hoursUntilShortage < 24) {
+                    alerts.push({
+                        requestId: r._id,
+                        campName: r.campName,
+                        type: r.type,
+                        population: r.population,
+                        currentStock: currentStock,
+                        incomingSupply: r.incomingSupply,
+                        consumptionRatePerHour: r.consumptionRatePerHour,
+                        peoplePerUnit: r.peoplePerUnit,
+                        hoursUntilShortage: Math.round( hoursUntilShortage * 10 ) / 10,
+                        status,
+                        mlPredicted: prediction.isMlPredicted,
+                        mlStatus: prediction.mlStatus
+                    });
+                }
+        }
+        alerts.sort((a, b) => a.hoursUntilShortage - b.hoursUntilShortage);
+        res.status(200).json({count: alerts.length,alerts});
   	} 
 	catch (err) {
     	res.status(500).json({ message: 'Failed to compute shortage alerts', error: err.message });

@@ -116,10 +116,13 @@ const rescueTeamSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null, 
+    },
   },
-  {
-    timestamps: true,
-  }
+  {timestamps: true}
 );
 
 rescueTeamSchema.index({

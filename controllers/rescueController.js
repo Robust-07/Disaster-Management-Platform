@@ -152,3 +152,44 @@ module.exports.getNearbyTeams = async (req, res) => {
     	res.status(500).json({success: false,message: error.message});
   	}
 };
+
+module.exports.getMyAssignments = async (req, res) => {
+    try {
+        const SOSReport = require('../models/report');
+        const RescueTeam = require('../models/RescueTeam');
+
+        const team = await RescueTeam.findOne({ userId: req.user.id });
+        if (!team) {
+            return res.status(404).json({ message: 'No rescue team profile found for this user' });
+        }
+
+        const assignments = await SOSReport.find({ assignedTeamId: team._id })
+            .populate('reporterId', 'name phone')
+            .sort({ createdAt: -1 });
+
+        res.status(200).json({ count: assignments.length, assignments });
+    } catch (err) {
+        res.status(500).json({ message: 'Failed to fetch assignments', error: err.message });
+    }
+};
+
+module.exports.linkUserToTeam = async (req, res) => {
+    try {
+        const { userId } = req.body;
+        if (!userId) {
+            return res.status(400).json({ message: 'userId is required' });
+        }
+
+        const team = await RescueTeam.findById(req.params.id);
+        if (!team) {
+            return res.status(404).json({ message: 'Rescue team not found' });
+        }
+
+        team.userId = userId;
+        await team.save();
+
+        res.status(200).json({ message: 'User linked to rescue team', team });
+    } catch (err) {
+        res.status(500).json({ message: 'Failed to link user', error: err.message });
+    }
+};

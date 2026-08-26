@@ -225,3 +225,43 @@ module.exports.cancelSOS = async (req, res) => {
         return res.status(500).json({success: false, message: 'Failed to cancel SOS report', error: err.message});
     }
 };
+
+module.exports.assignRescueTeam = async (req, res) => {
+    try {
+        const { teamId } = req.body;
+        if (!teamId) {
+            return res.status(400).json({ message: 'teamId is required' });
+        }
+
+        const report = await SOSReport.findById(req.params.id);
+        if (!report) {
+            return res.status(404).json({ message: 'SOS report not found' });
+        }
+
+        const RescueTeam = require('../models/RescueTeam');
+        const team = await RescueTeam.findById(teamId);
+        if (!team) {
+            return res.status(404).json({ message: 'Rescue team not found' });
+        }
+
+        if (team.currentStatus !== 'AVAILABLE') {
+            return res.status(400).json({ message: 'This team is not currently available' });
+        }
+
+        report.assignedTeamId = team._id;
+        report.status = 'assigned';
+        await report.save();
+
+        team.currentStatus = 'BUSY';
+        team.currentSOS = report._id;
+        await team.save();
+
+        const io = req.app.get('io');
+        io.emit('status-update', { sosId: report._id, status: 'assigned' });
+        io.emit('team-assigned', { sosId: report._id, teamId: team._id });
+
+        res.status(200).json({ message: 'Rescue team assigned', sosReport: report, rescueTeam: team });
+    } catch (err) {
+        res.status(500).json({ message: 'Failed to assign rescue team', error: err.message });
+    }
+};

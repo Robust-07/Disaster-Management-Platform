@@ -30,7 +30,7 @@ app.use(morgan('dev'));
 // Routes
 app.use('/api/auth', require('./routes/authroutes.js'));
 app.use('/api/sos', require('./routes/sosroutes.js'));
-app.use('/api/rescue', require('./routes/rescueroutes.js'));
+app.use('/api/rescue-teams', require('./routes/rescueroutes.js'));
 app.use('/api/shelters', require('./routes/shelterroutes.js'));
 app.use('/api/risk-zones', require('./routes/riskzoneroutes.js'));
 app.use('/api/resources', require('./routes/resourceroutes'));

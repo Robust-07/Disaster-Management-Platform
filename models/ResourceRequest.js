@@ -63,6 +63,26 @@ const resourceRequestSchema = new mongoose.Schema(
 		default: 0,
 		min: 0
 	},
+	shortageHours: {
+		type: Number,
+		default: null
+	},
+
+	shortageStatus: {
+		type: String,
+		enum: ['CRITICAL', 'WARNING', 'MONITOR', 'SAFE'],
+		default: null
+	},
+
+	isShortageMlPredicted: {
+		type: Boolean,
+		default: false
+	},
+
+	shortageMlStatus: {
+		type: String,
+		default: null
+	},
 
     consumptionRatePerHour: {
       type: Number,
