@@ -23,12 +23,17 @@ const User = require("./models/user.js");
 const sosReport = require("./models/report.js");
 
 app.use(express.json());
-app.use(cors());
 app.use(helmet());
 app.use(morgan('dev'));
 
+app.use(cors({
+	origin: "http://localhost:5173",
+    credentials: true
+}));
+
 // Routes
 app.use('/api/auth', require('./routes/authroutes.js'));
+app.use('/api/dashboard', require('./routes/dashboardroutes.js'));
 app.use('/api/sos', require('./routes/sosroutes.js'));
 app.use('/api/rescue-teams', require('./routes/rescueroutes.js'));
 app.use('/api/shelters', require('./routes/shelterroutes.js'));
@@ -37,6 +42,9 @@ app.use('/api/resources', require('./routes/resourceroutes'));
 app.use('/api/resource-requests', require('./routes/resourcerequestroutes'));
 app.use('/api/volunteers', require('./routes/volunteerroutes'));
 app.use('/api/campaigns', require('./routes/campaignroutes'));
+
+
+ 
 
 app.set('io', io);
 

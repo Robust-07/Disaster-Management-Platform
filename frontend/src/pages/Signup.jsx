@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import api from "../api/axios";
 
 function Signup() {
     const navigate = useNavigate();
@@ -64,12 +65,14 @@ function Signup() {
             localStorage.setItem("token", data.token);
             localStorage.setItem("user", JSON.stringify(data.user));
 
+            toast.success(`Welcome back, ${data.user.name}!`);
             navigate("/dashboard");
 
         } catch (error) {
             console.error("Signup error:", error);
             setError("Unable to connect to backend");
             setLoading(false);
+            toast.error(err.response?.data?.message || "Login failed");
         }
     };
 

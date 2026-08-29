@@ -1,4 +1,5 @@
 const RiskZone = require('../models/riskzone.js');
+const predictDisasterRisk = require('../utils/disasterPrediction.js');
 
 module.exports.createRiskZone = async (req, res) => {
     try {
@@ -53,6 +54,25 @@ module.exports.updateRiskZone = async (req, res) => {
     } 
     catch (err) {
         res.status(500).json({ message: 'Failed to update risk zone', error: err.message });
+    }
+};
+
+// @access Protected
+module.exports.getDisasterRiskPrediction = async (req, res) => {
+    try {
+        const { rainfall, river_level, humidity, temperature, previous_floods } = req.body;
+
+        const prediction = await predictDisasterRisk({
+            rainfall,
+            river_level,
+            humidity,
+            temperature,
+            previous_floods,
+        });
+
+        res.status(200).json(prediction);
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Failed to predict disaster risk', error: err.message });
     }
 };
 

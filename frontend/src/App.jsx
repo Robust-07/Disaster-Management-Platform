@@ -1,29 +1,46 @@
-import {
-    BrowserRouter,
-    Routes,
-    Route,
-    Navigate
-} from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-import LandingPage from "./pages/LandingPage";
+import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
-
+import CitizenDashboard from "./pages/CitizenDashboard";
+import ProtectedRoute from "./components/ProtectedRoute";
+import NotFoundPage from "./pages/NotFoundPage";
 
 function App() {
-
     return (
         <BrowserRouter>
 
             <Routes>
-                <Route path="/" element={< LandingPage />} />
-                <Route path="/login" element={< Login />} />
-                <Route path="/signup" element={< Signup />} />
-                
-                
-                
-            </Routes>
 
+                {/* Home */}
+                <Route
+                    path="/"
+                    element={<Home />}
+                />
+
+                {/* Authentication */}
+                <Route
+                    path="/login"
+                    element={<Login />}
+                />
+
+                <Route
+                    path="/signup"
+                    element={<Signup />}
+                />
+
+                {/* Citizen Dashboard */}
+                <Route
+                    path="/dashboard"
+                    element={<ProtectedRoute> <CitizenDashboard /></ProtectedRoute>}
+                />
+                {/* Catch-all route for 404 Not Found */}
+                <Route 
+                    path="*" 
+                    element={<NotFoundPage />} 
+                />
+        </Routes>
         </BrowserRouter>
     );
 }

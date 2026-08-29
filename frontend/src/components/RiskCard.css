@@ -1,0 +1,92 @@
+.risk-card {
+  padding: 20px;
+  border-radius: 14px;
+  background: white;
+}
+
+.risk-card.low {
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+}
+
+.risk-card.medium {
+  border: 1px solid #fde68a;
+  background: #fffbeb;
+}
+
+.risk-card.high {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+}
+
+.risk-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.risk-label {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.risk-header h2 {
+  margin: 5px 0 0;
+  font-size: 23px;
+}
+
+.risk-card.low h2 {
+  color: #16a34a;
+}
+
+.risk-card.medium h2 {
+  color: #d97706;
+}
+
+.risk-card.high h2 {
+  color: #dc2626;
+}
+
+.risk-icon {
+  font-size: 30px;
+}
+
+.risk-meter {
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 20px;
+  margin-top: 18px;
+  overflow: hidden;
+}
+
+.risk-meter-fill {
+  height: 100%;
+  border-radius: 20px;
+  background: #22c55e;
+}
+
+.risk-card.medium .risk-meter-fill {
+  background: #f59e0b;
+}
+
+.risk-card.high .risk-meter-fill {
+  background: #ef4444;
+}
+
+.risk-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 11px;
+}
+
+.risk-footer span {
+  color: #6b7280;
+}
+
+.risk-card p {
+  font-size: 11px;
+  color: #6b7280;
+  margin: 12px 0 0;
+  line-height: 1.4;
+}

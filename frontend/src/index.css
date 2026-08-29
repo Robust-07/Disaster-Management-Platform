@@ -27,6 +27,18 @@ body {
     justify-content: space-between;
 }
 
+.info-banner {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
 .resq-brand {
     display: flex;
     flex-direction: column;
