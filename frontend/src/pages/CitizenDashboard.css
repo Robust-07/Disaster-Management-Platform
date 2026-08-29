@@ -527,3 +527,12 @@
     }
 
 }
+
+
+.quick-action-wrapper {
+    cursor: pointer;
+}
+
+.quick-action-wrapper > * {
+    height: 100%;
+}

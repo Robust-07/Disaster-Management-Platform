@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import Navbar from "../components/Navbar";
 import AlertCard from "../components/AlertCard";
@@ -12,6 +13,9 @@ import "./CitizenDashboard.css";
 
 
 function CitizenDashboard() {
+
+    const navigate = useNavigate();
+
 
     // =====================================================
     // USER
@@ -198,6 +202,7 @@ function CitizenDashboard() {
             setLocationLoading(false);
 
             return;
+
         }
 
 
@@ -327,6 +332,7 @@ function CitizenDashboard() {
 
 
             {
+
                 enableHighAccuracy: true,
 
                 timeout: 30000,
@@ -349,6 +355,17 @@ function CitizenDashboard() {
         getCurrentLocation();
 
     }, []);
+
+
+    // =====================================================
+    // QUICK ACTION NAVIGATION
+    // =====================================================
+
+    const handleQuickAction = (path) => {
+
+        navigate(path);
+
+    };
 
 
     // =====================================================
@@ -475,30 +492,56 @@ function CitizenDashboard() {
                     )}
 
 
-                {location && !locationLoading && (
+                    {location && !locationLoading && (
 
-                    <div className="location-success">
+                        <div className="location-success">
 
-                        <p>
-                            📍 <strong>Location detected</strong>
-                        </p>
+                            <p>
 
-                        <p>
-                            Latitude: {location.latitude.toFixed(6)}
-                        </p>
+                                📍{" "}
 
-                        <p>
-                            Longitude: {location.longitude.toFixed(6)}
-                        </p>
+                                <strong>
+                                    Location detected
+                                </strong>
 
-                        <p>
-                            Accuracy: approximately{" "}
-                            {Math.round(locationAccuracy)}m
-                        </p>
+                            </p>
 
-                    </div>
 
-                )}
+                            <p>
+
+                                Latitude:{" "}
+
+                                {location.latitude.toFixed(6)}
+
+                            </p>
+
+
+                            <p>
+
+                                Longitude:{" "}
+
+                                {location.longitude.toFixed(6)}
+
+                            </p>
+
+
+                            <p>
+
+                                Accuracy: approximately{" "}
+
+                                {locationAccuracy
+                                    ? Math.round(
+                                        locationAccuracy
+                                    )
+                                    : "--"
+                                }m
+
+                            </p>
+
+                        </div>
+
+                    )}
+
                 </div>
 
 
@@ -548,8 +591,7 @@ function CitizenDashboard() {
 
                                     ? "..."
 
-                                    : dashboardData
-                                        .nearbyHospitals
+                                    : dashboardData.nearbyHospitals
 
                                 }
 
@@ -591,8 +633,7 @@ function CitizenDashboard() {
 
                                     ? "..."
 
-                                    : dashboardData
-                                        .nearbyShelters
+                                    : dashboardData.nearbyShelters
 
                                 }
 
@@ -614,9 +655,7 @@ function CitizenDashboard() {
 
                         riskLevel={
                             dataLoading
-
                                 ? "..."
-
                                 : dashboardData.riskLevel
                         }
 
@@ -696,57 +735,135 @@ function CitizenDashboard() {
 
                 <section className="dashboard-section">
 
-                    <h2>
+                    <div className="section-heading">
 
-                        Quick Actions
+                        <div>
 
-                    </h2>
+                            <h2>
+                                Quick Actions
+                            </h2>
+
+                            <p>
+                                Quickly access important
+                                emergency services.
+                            </p>
+
+                        </div>
+
+                    </div>
 
 
                     <div className="quick-actions">
 
-                        <QuickActionCard
 
-                            title="Safe Routes"
+                        {/* SAFE ROUTES */}
 
-                            icon="🛣️"
+                        <div
+                            className="quick-action-wrapper"
+                            onClick={() =>
+                                handleQuickAction(
+                                    "/safe-routes"
+                                )
+                            }
+                        >
 
-                            path="/safe-routes"
+                            <QuickActionCard
 
-                        />
+                                title="Safe Routes"
 
+                                icon="🛣️"
 
-                        <QuickActionCard
+                                path="/safe-routes"
 
-                            title="Hospitals"
+                            />
 
-                            icon="🏥"
-
-                            path="/hospitals"
-
-                        />
-
-
-                        <QuickActionCard
-
-                            title="Shelters"
-
-                            icon="🏠"
-
-                            path="/shelters"
-
-                        />
+                        </div>
 
 
-                        <QuickActionCard
+                        {/* HOSPITALS */}
 
-                            title="Emergency Resources"
+                        <div
+                            className="quick-action-wrapper"
+                            onClick={() =>
+                                handleQuickAction(
+                                    "/hospitals"
+                                )
+                            }
+                        >
 
-                            icon="📦"
+                            <QuickActionCard
 
-                            path="/resources"
+                                title="Hospitals"
 
-                        />
+                                icon="🏥"
+
+                                path="/hospitals"
+
+                            />
+
+                        </div>
+
+
+                        {/* SHELTERS */}
+
+                        <div
+                            className="quick-action-wrapper"
+                            onClick={() =>
+                                handleQuickAction(
+                                    "/shelters"
+                                )
+                            }
+                        >
+
+                            <QuickActionCard
+
+                                title="Shelters"
+
+                                icon="🏠"
+
+                                path="/shelters"
+
+                            />
+
+                        </div>
+
+
+                        {/* RESOURCES */}
+
+                        <div
+                            className="quick-action-wrapper"
+                            onClick={() =>
+                                handleQuickAction(
+                                    "/resources"
+                                )
+                            }
+                        >
+
+                            <QuickActionCard
+
+                                title="Emergency Resources"
+
+                                icon="📦"
+
+                                path="/resources"
+
+                            />
+
+                        </div>
+
+                        <div
+                            className="quick-action-wrapper"
+                            onClick={() =>
+                                handleQuickAction("/volunteers")
+                            }
+                        >
+                            <QuickActionCard
+                                title="Volunteers & NGOs"
+                                icon="🤝"
+                                path="/volunteers"
+                            />
+                        </div>
+
 
                     </div>
 

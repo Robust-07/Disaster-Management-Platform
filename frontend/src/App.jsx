@@ -9,6 +9,9 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import CitizenDashboard from "./pages/CitizenDashboard";
+import Emergency from "./pages/Emergency";
+import Resources from "./pages/Resources";
+import VolunteerNGO from "./pages/VolunteerNGO";
 
 function App() {
 
@@ -38,6 +41,19 @@ function App() {
                 <Route
                     path="/citizen-dashboard"
                     element={<CitizenDashboard />}
+                />
+
+                <Route 
+                    path="/emergency" 
+                    element={<Emergency />} />
+
+                <Route 
+                    path="/resources" 
+                    element={<Resources />} />
+
+                <Route
+                    path="/volunteers"
+                    element={<VolunteerNGO />}
                 />
         </Routes>
         </BrowserRouter>

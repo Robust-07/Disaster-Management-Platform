@@ -1,7 +1,10 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import "./SOSCard.css";
 
 const SOSCard = () => {
+
+  const navigate = useNavigate();
 
   const handleSOS = () => {
     const confirmed = window.confirm(
@@ -9,9 +12,7 @@ const SOSCard = () => {
     );
 
     if (confirmed) {
-      alert(
-        "SOS request sent successfully. Emergency services have been notified."
-      );
+      navigate("/emergency");
     }
   };
 
