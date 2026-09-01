@@ -1,97 +1,81 @@
+// controllers/dashboardController.js
 const Shelter = require('../models/shelter');
-const RiskZone = require('../models/riskzone'); // adjust to your actual filename
-const { getDistanceKm } = require('../utils/resourceMatching');
-const getShelterStatus = require('../utils/shelterStatus');
-const sendError = require('../utils/errorResponse');
+const getCurrentWeather = require('../utils/weatherService');
+const predictDisasterRisk = require('../utils/disasterPrediction');
 
-const riskLevelDisplay = {
-    low: 'Low',
-    medium: 'Moderate',
-    high: 'High',
-    critical: 'Critical',
-};
-
-// @route  GET /api/dashboard?lat=..&lng=..
-// @access Protected — any logged-in user
-module.exports.getDashboardData = async (req, res) => {
+module.exports.getDashboard = async (req, res) => {
     try {
         const { lat, lng } = req.query;
 
-        if (!lat || !lng) {
+        if (lat === undefined || lng === undefined) {
             return res.status(400).json({ message: 'lat and lng query params are required' });
         }
 
-        const userCoords = [Number(lng), Number(lat)];
+        const latitude = Number(lat);
+        const longitude = Number(lng);
 
-        // --- Nearby hospitals & shelters (reuse existing geospatial query) ---
-        const nearbyPlaces = await Shelter.find({
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+            return res.status(400).json({ message: 'Invalid lat/lng' });
+        }
+
+        const RADIUS_METERS = 10000;
+
+        const allShelters = await Shelter.find({
             location: {
                 $near: {
-                    $geometry: { type: 'Point', coordinates: userCoords },
-                    $maxDistance: 15000, // 15km
-                },
-            },
-        });
+                    $geometry: { type: 'Point', coordinates: [longitude, latitude] },
+                    $maxDistance: RADIUS_METERS
+                }
+            }
+        }).catch(err => { console.error('Shelter fetch error:', err); return []; });
 
-        const hospitals = nearbyPlaces
-            .filter((p) => p.type === 'hospital')
-            .map((p) => ({
-                ...p.toObject(),
-                availableCapacity: p.capacity !== null ? p.capacity - p.currentOccupancy : null,
-                status: getShelterStatus(p.capacity, p.currentOccupancy),
-            }));
+        const hospitals = allShelters.filter(
+            s => s.type && String(s.type).toLowerCase().includes('hospital')
+        );
+        const shelters = allShelters.filter(
+            s => !s.type || !String(s.type).toLowerCase().includes('hospital')
+        );
 
-        const shelters = nearbyPlaces
-            .filter((p) => p.type === 'shelter')
-            .map((p) => ({
-                ...p.toObject(),
-                availableCapacity: p.capacity !== null ? p.capacity - p.currentOccupancy : null,
-                status: getShelterStatus(p.capacity, p.currentOccupancy),
-            }));
+        // FIX: always defined, even with no Alert model yet
+        const alerts = [];
 
-        // --- Risk level (closest active risk zone within 15km) ---
-        const activeZones = await RiskZone.find({ active: true });
-        let closestZone = null;
-        let closestDistance = Infinity;
+        const weather = await getCurrentWeather(latitude, longitude)
+            .catch(err => { console.error('Weather fetch error:', err); return null; });
 
-        for (const zone of activeZones) {
-            const distance = getDistanceKm(userCoords, zone.location.coordinates);
-            if (distance < closestDistance) {
-                closestDistance = distance;
-                closestZone = zone;
+        let disasterRisk = null;
+        if (weather) {
+            try {
+                disasterRisk = await predictDisasterRisk({
+                    rainfall: weather.rainfall,
+                    river_level: 3,
+                    humidity: weather.humidity,
+                    temperature: weather.temperature,
+                    previous_floods: 2
+                });
+            } catch (err) {
+                console.error('ML prediction error:', err);
+                disasterRisk = { success: false, message: 'Prediction unavailable' };
             }
         }
 
-        const riskLevel =
-            closestZone && closestDistance <= 15
-                ? riskLevelDisplay[closestZone.riskLevel] || 'Unknown'
-                : 'Unknown';
-
-        // --- Active alerts (all nearby active risk zones, formatted for the frontend) ---
-        const alerts = activeZones
-            .map((zone) => ({
-                zone, distance: getDistanceKm(userCoords, zone.location.coordinates)}))
-            .filter((z) => z.distance <= 15)
-            .map(({ zone, distance }) => ({
-                id: zone._id,
-                title: zone.areaName,
-                description: zone.description,
-                severity: zone.riskLevel,
-                distanceKm: Math.round(distance * 10) / 10,
-                location: zone.location,
-            }));
-
-        res.status(200).json({
+        return res.status(200).json({
             activeAlerts: alerts.length,
             nearbyHospitals: hospitals.length,
             nearbyShelters: shelters.length,
-            riskLevel,
             alerts,
             hospitals,
             shelters,
+            disasterRisk,
+            weather,
+            features: weather ? {
+                rainfall: weather.rainfall,
+                humidity: weather.humidity,
+                temperature: weather.temperature
+            } : null
         });
+
     } catch (err) {
-        res.status(500).json({ message: 'Failed to load dashboard data', error: err.message });
-        return sendError(res, 500, 'Failed to create resource', err);
+        console.error('Dashboard error:', err);
+        return res.status(500).json({ message: 'Failed to load dashboard', error: err.message });
     }
 };

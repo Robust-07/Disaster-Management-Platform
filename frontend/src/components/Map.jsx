@@ -378,6 +378,21 @@ function Map({
 
                                     )}
 
+                                    {hospital.availableCapacity !== undefined && (
+                                        <>
+                                            <br />
+                                            🛏️ Available Capacity:{" "}
+                                            {hospital.availableCapacity}
+                                        </>
+                                    )}
+
+                                    {hospital.status && (
+                                        <>
+                                            <br />
+                                            Status: {hospital.status}
+                                        </>
+                                    )}
+
                                 </Popup>
 
                             </Marker>
@@ -445,6 +460,21 @@ function Map({
 
                                         </>
 
+                                    )}
+
+                                    {shelter.availableCapacity !== undefined && (
+                                        <>
+                                            <br />
+                                            👥 Available Capacity:{" "}
+                                            {shelter.availableCapacity}
+                                        </>
+                                    )}
+
+                                    {shelter.status && (
+                                        <>
+                                            <br />
+                                            Status: {shelter.status}
+                                        </>
                                     )}
 
                                 </Popup>

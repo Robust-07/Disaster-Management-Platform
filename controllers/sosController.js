@@ -92,7 +92,9 @@ module.exports.createSOS = async (req, res) => {
         });
 
         const io = req.app.get('io');
-        io.emit('new-sos', sosReport);
+        if (io) {
+            io.emit('new-sos', sosReport);
+        }
 
         return res.status(201).json({
             success: true,
@@ -186,8 +188,21 @@ module.exports.updateSOSStatus = async (req, res) => {
         report.status = status;
         await report.save();
 
+        // FIX: free up the assigned team when the SOS is resolved
+        if (status === 'resolved' && report.assignedTeamId) {
+            const RescueTeam = require('../models/RescueTeam');
+            const team = await RescueTeam.findById(report.assignedTeamId);
+            if (team) {
+                team.currentStatus = 'AVAILABLE';
+                team.currentSOS = null;
+                await team.save();
+            }
+        }
+
         const io = req.app.get('io');
-        io.emit('status-update', { sosId: report._id, status: report.status });
+        if (io) {
+            io.emit('status-update', { sosId: report._id, status: report.status });
+        }
         
         return res.status(200).json({success: true, message: 'Status updated successfully', sosReport: report});
     }
@@ -219,6 +234,23 @@ module.exports.cancelSOS = async (req, res) => {
         report.status = 'resolved';
         report.cancelledAt = new Date();
         await report.save();
+
+        // FIX: free up the assigned team here too
+        if (report.assignedTeamId) {
+            const RescueTeam = require('../models/RescueTeam');
+            const team = await RescueTeam.findById(report.assignedTeamId);
+            if (team) {
+                team.currentStatus = 'AVAILABLE';
+                team.currentSOS = null;
+                await team.save();
+            }
+        }
+
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('status-update', { sosId: report._id, status: report.status });
+        }
+
         return res.status(200).json({success: true,message: 'SOS report cancelled',sosReport: report});
     }
     catch (err) {

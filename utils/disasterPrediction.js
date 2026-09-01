@@ -1,25 +1,15 @@
-const predictDisasterRisk = async (features) => {
-
-    const mlServiceUrl = process.env.ML_SERVICE_URL;
-
-    const payload = {
-        rainfall: Number(features.rainfall) || 0,
-        river_level: Number(features.river_level) || 0,
-        humidity: Number(features.humidity) || 0,
-        temperature: Number(features.temperature) || 0,
-        previous_floods: Number(features.previous_floods) || 0
-    };
-
-    const controller = new AbortController();
-
-    const timeoutId = setTimeout(() => {
-        controller.abort();
-    }, 3000);
+const predictDisaster = async ({
+    rainfall,
+    river_level,
+    humidity,
+    temperature,
+    previous_floods
+}) => {
 
     try {
 
         const response = await fetch(
-            `${mlServiceUrl}/predict/disaster`,
+            `${process.env.ML_SERVICE_URL || "http://localhost:5001"}/predict/disaster`,
             {
                 method: "POST",
 
@@ -27,66 +17,35 @@ const predictDisasterRisk = async (features) => {
                     "Content-Type": "application/json"
                 },
 
-                body: JSON.stringify(payload),
-
-                signal: controller.signal
+                body: JSON.stringify({
+                    rainfall,
+                    river_level,
+                    humidity,
+                    temperature,
+                    previous_floods
+                })
             }
         );
 
-        clearTimeout(timeoutId);
+        const data = await response.json();
 
         if (!response.ok) {
             throw new Error(
-                `ML service HTTP error: ${response.status}`
+                data.message || "ML service prediction failed"
             );
         }
 
-        const data = await response.json();
+        return data;
 
-        if (
-            data &&
-            data.success &&
-            data.prediction
-        ) {
+    } catch (error) {
 
-            return {
-                success: true,
-
-                risk: String(
-                    data.prediction.risk
-                ),
-
-                probability: Number(
-                    data.prediction.probability
-                ),
-
-                mlStatus: "SUCCESS"
-            };
-        }
-
-        throw new Error(
-            "Invalid disaster ML response"
+        console.error(
+            "Disaster ML service error:",
+            error.message
         );
 
-    } catch (err) {
-
-        clearTimeout(timeoutId);
-
-        console.warn(
-            "[Disaster ML Warning]",
-            err.message
-        );
-
-        return {
-            success: false,
-
-            risk: "UNKNOWN",
-
-            probability: null,
-
-            mlStatus: "ML_UNAVAILABLE"
-        };
+        throw error;
     }
 };
 
-module.exports = predictDisasterRisk;
+module.exports = predictDisaster;

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../api/axios";
+import toast from "react-hot-toast";
 
 function Signup() {
     const navigate = useNavigate();
@@ -40,45 +41,37 @@ function Signup() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError("");
-        setLoading(true);
 
+        // FIX: validate BEFORE setting loading, so a failed validation
+        // never leaves the button stuck on "Creating account..."
         if (!validateForm()) return;
 
+        setLoading(true);
+
         try {
-            const response = await fetch("http://localhost:5000/api/auth/signup", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(formData),
-            });
+    const response = await api.post("/api/auth/signup", formData);
+    const data = response.data;
 
-            const data = await response.json();
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("user", JSON.stringify(data.user));
 
-            if (!response.ok) {
-                setError(data.message || "Registration failed");
-                setLoading(false);
-                return;
-            }
+    toast.success(`Welcome, ${data.user.name}!`);
+    navigate("/dashboard");
 
-            // Store the token — same pattern as Login.jsx
-            localStorage.setItem("token", data.token);
-            localStorage.setItem("user", JSON.stringify(data.user));
-
-            toast.success(`Welcome back, ${data.user.name}!`);
-            navigate("/dashboard");
-
-        } catch (error) {
-            console.error("Signup error:", error);
-            setError("Unable to connect to backend");
-            setLoading(false);
-            toast.error(err.response?.data?.message || "Login failed");
-        }
+} catch (error) {
+    console.error("Signup error:", error.response?.data || error.message);
+    const message =
+        error.response?.data?.message ||
+        "Unable to connect to backend. Please check if the server is running.";
+    setError(message);
+    toast.error(message);
+} finally {
+    setLoading(false);
+}
     };
 
     return (
         <div className="auth-page">
-            {/* LEFT SIDE - unchanged */}
             <div className="auth-left">
                 <div className="resq-brand">
                     <h2>ResQ</h2>
@@ -91,7 +84,6 @@ function Signup() {
                 <div className="footer-text">जन सेवा • आपदा प्रबंधन • सुरक्षित भारत</div>
             </div>
 
-            {/* RIGHT SIDE */}
             <div className="auth-right">
                 <div className="auth-card signup-card">
                     <div className="card-header">
@@ -110,7 +102,7 @@ function Signup() {
                             <div className="form-group">
                                 <label>Email Address</label>
                                 <input type="email" name="email" placeholder="Enter your email"
-                                    value={formData.email} onChange={handleChange} 
+                                    value={formData.email} onChange={handleChange}
                                     pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
                                     title="Enter a valid email address (e.g. name@example.com)" required />
                             </div>
@@ -120,7 +112,7 @@ function Signup() {
                                     value={formData.phone} onChange={handleChange}
                                     pattern="[6-9][0-9]{9}"
                                     title="Enter a valid 10-digit Indian mobile number"
-                                    maxLength="10" required 
+                                    maxLength="10" required
                                 />
                             </div>
                         </div>

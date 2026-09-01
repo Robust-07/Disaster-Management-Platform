@@ -1,19 +1,14 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import "./SOSCard.css";
 
 const SOSCard = () => {
 
-  const handleSOS = () => {
-    const confirmed = window.confirm(
-      "Are you sure you want to send an emergency SOS?"
-    );
+  const navigate = useNavigate();
 
-    if (confirmed) {
-      alert(
-        "SOS request sent successfully. Emergency services have been notified."
-      );
-    }
-  };
+  const handleSOS = () => {
+    navigate("/sos-form"); 
+};
 
   return (
     <div className="sos-card">

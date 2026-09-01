@@ -1,0 +1,151 @@
+.authority-page {
+    min-height: 100vh;
+    background: #f4f6fb;
+    padding-bottom: 40px;
+}
+
+.authority-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #14337a;
+    color: #fff;
+    padding: 20px 32px;
+}
+
+.authority-header h1 { margin: 0; font-size: 20px; }
+.authority-header p { margin: 2px 0 0; font-size: 13px; opacity: 0.85; }
+
+.refresh-btn {
+    background: #3b5bdb;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.authority-error {
+    color: #c0392b;
+    background: #fdecec;
+    padding: 10px 16px;
+    margin: 16px 32px 0;
+    border-radius: 8px;
+}
+
+.authority-list {
+    max-width: 800px;
+    margin: 24px auto;
+    padding: 0 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.sos-report-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 20px 24px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+}
+
+.sos-report-top {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.severity-badge {
+    color: #fff;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.status-pill {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: capitalize;
+    background: #eee;
+}
+.status-pending { background: #fdecc8; color: #a6650b; }
+.status-assigned { background: #d8e6ff; color: #1b4bb8; }
+.status-in-progress { background: #ddeeff; color: #146ca8; }
+.status-resolved { background: #dcf5e2; color: #1e7a3c; }
+
+.sos-description {
+    font-size: 15px;
+    color: #222;
+    margin: 8px 0;
+}
+
+.sos-meta-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 12px 0;
+}
+
+.sos-meta-grid span {
+    display: block;
+    font-size: 12px;
+    color: #888;
+}
+
+.sos-meta-grid strong {
+    font-size: 14px;
+    color: #222;
+}
+
+.sos-photo {
+    width: 100%;
+    max-height: 200px;
+    object-fit: cover;
+    border-radius: 10px;
+    margin: 10px 0;
+}
+
+.sos-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+
+.sos-actions button {
+    border: none;
+    padding: 9px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.assign-btn { background: #3b5bdb; color: #fff; }
+.progress-btn { background: #f1b13c; color: #fff; }
+.resolve-btn { background: #2ea043; color: #fff; }
+.cancel-assign { background: #eee; color: #333; }
+
+.assign-form {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.assign-form input {
+    padding: 8px 10px;
+    border: 1px solid #d7dbe3;
+    border-radius: 8px;
+    font-size: 13px;
+}
+.assign-form select {
+    padding: 8px 10px;
+    border: 1px solid #d7dbe3;
+    border-radius: 8px;
+    font-size: 13px;
+    background: #fff;
+}

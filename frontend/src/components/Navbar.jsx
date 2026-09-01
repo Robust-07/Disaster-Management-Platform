@@ -1,10 +1,29 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import "./Navbar.css";
 import toast from "react-hot-toast";
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const storedUser = JSON.parse(localStorage.getItem("user") || "null");
+    setUser(storedUser);
+  }, []);
+
+  const role = user?.role || "citizen";
+  const displayName = user?.name || "User";
+  const initial = displayName.charAt(0).toUpperCase();
+
+  // Human-readable label for the account type shown under the name
+  const roleLabel = {
+    citizen: "Citizen Account",
+    authority: "Authority Account",
+    rescuer: "Rescuer Account",
+    ngo: "NGO Account",
+    volunteer: "Volunteer Account",
+  }[role] || "Account";
 
   return (
     <nav className="dashboard-navbar">
@@ -20,6 +39,13 @@ const Navbar = () => {
 
       <div className="navbar-actions">
 
+        {/* FIX: only authority/rescuer see this link — no more manual URL typing */}
+        {(role === "authority" || role === "rescuer") && (
+          <Link to="/authority" className="navbar-link">
+            Authority Dashboard
+          </Link>
+        )}
+
         <button className="navbar-icon-btn">
           🔔
           <span className="notification-dot"></span>
@@ -27,12 +53,13 @@ const Navbar = () => {
 
         <div className="navbar-profile">
           <div className="profile-avatar">
-            C
+            {initial}
           </div>
 
           <div className="profile-text">
-            <strong>Citizen</strong>
-            <span>Citizen Account</span>
+            {/* FIX: was hardcoded to "Citizen" for every user */}
+            <strong>{displayName}</strong>
+            <span>{roleLabel}</span>
           </div>
         </div>
 

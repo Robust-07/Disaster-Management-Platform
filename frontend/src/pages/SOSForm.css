@@ -1,0 +1,151 @@
+/* SOSForm.css */
+.emergency-page {
+    min-height: 100vh;
+    background: #f4f6fb;
+}
+
+.emergency-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #14337a;
+    color: #fff;
+    padding: 20px 32px;
+}
+
+.emergency-header h1 {
+    margin: 0;
+    font-size: 22px;
+}
+
+.emergency-header p {
+    margin: 2px 0 0;
+    font-size: 13px;
+    opacity: 0.85;
+}
+
+.back-dashboard-btn {
+    background: #3b5bdb;
+    color: #fff;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.back-dashboard-btn:hover {
+    background: #2f4bb8;
+}
+
+.emergency-container {
+    max-width: 640px;
+    margin: 32px auto;
+    padding: 0 20px;
+}
+
+.emergency-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 28px 32px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+}
+
+.emergency-card h2 {
+    margin-top: 0;
+    color: #14337a;
+    font-size: 20px;
+}
+
+.location-error {
+    background: #fdecec;
+    color: #c0392b;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    margin-bottom: 16px;
+}
+
+/* Form layout */
+.sos-form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.sos-form label {
+    font-weight: 600;
+    font-size: 14px;
+    color: #333;
+    display: block;
+    margin-bottom: 6px;
+}
+
+.sos-form textarea,
+.sos-form input[type="number"],
+.sos-form input[type="text"],
+.sos-form input[type="file"] {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border: 1px solid #d7dbe3;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+}
+
+.sos-form textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+.sos-form input:focus,
+.sos-form textarea:focus {
+    outline: none;
+    border-color: #3b5bdb;
+    box-shadow: 0 0 0 3px rgba(59, 91, 219, 0.15);
+}
+
+.sos-form .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+}
+
+.sos-form .checkbox-row input {
+    width: auto;
+}
+
+.sos-form .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+}
+
+@media (max-width: 560px) {
+    .sos-form .field-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+.sos-form button[type="submit"] {
+    background: #e63946;
+    color: #fff;
+    border: none;
+    padding: 14px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 8px;
+}
+
+.sos-form button[type="submit"]:hover {
+    background: #d62839;
+}
+
+.sos-form button[type="submit"]:disabled {
+    background: #f0a1a8;
+    cursor: not-allowed;
+}

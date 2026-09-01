@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 
 import Navbar from "../components/Navbar";
@@ -11,8 +12,8 @@ import Map from "../components/Map";
 
 import "./CitizenDashboard.css";
 
-
 function CitizenDashboard() {
+    const navigate = useNavigate();
 
     // =====================================================
     // USER
@@ -37,137 +38,370 @@ function CitizenDashboard() {
     const [locationAccuracy, setLocationAccuracy] =
         useState(null);
 
-    const [disasterRisk, setDisasterRisk] = useState(null);
-
 
     // =====================================================
     // DASHBOARD DATA
     // =====================================================
 
-    const [dashboardData, setDashboardData] = useState({
+    const [dashboardData, setDashboardData] =
+        useState({
+            activeAlerts: 0,
+            nearbyHospitals: 0,
+            nearbyShelters: 0,
 
-        activeAlerts: 0,
+            riskLevel: "Unknown",
+            riskScore: 0,
 
-        nearbyHospitals: 0,
+            alerts: [],
+            hospitals: [],
+            shelters: [],
 
-        nearbyShelters: 0,
-
-        riskLevel: "Unknown",
-
-        alerts: [],
-
-        hospitals: [],
-
-        shelters: []
-
-    });
-
+            disasterRisk: null,
+            weather: null,
+            features: null
+        });
 
     const [dataLoading, setDataLoading] =
         useState(false);
 
+    const [disasterError, setDisasterError] =
+        useState("");
+
 
     // =====================================================
-    // CALL BACKEND
+    // EXTRACT ML RISK
+    // =====================================================
+    //
+    // Your backend/ML can return:
+    //
+    // Option 1:
+    // disasterRisk = {
+    //     success: true,
+    //     risk: "LOW",
+    //     probability: 0.6607
+    // }
+    //
+    // OR:
+    //
+    // Option 2:
+    // disasterRisk = {
+    //     success: true,
+    //     prediction: {
+    //         risk: "LOW",
+    //         probability: 0.6607
+    //     }
+    // }
+    //
+    // This function supports BOTH.
     // =====================================================
 
-const fetchDashboardData = async (latitude, longitude) => {
-    try {
-        setDataLoading(true);
-
-        const token = localStorage.getItem("token");
-
-        if (!token) {
-            throw new Error("No authentication token found");
+    const extractRiskData = (disasterRisk) => {
+        if (!disasterRisk) {
+            return {
+                risk: null,
+                probability: null
+            };
         }
 
-        const response = await api.get(
-            `/api/dashboard?lat=${latitude}&lng=${longitude}`,
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
+        const risk =
+            disasterRisk.risk ??
+            disasterRisk.prediction?.risk ??
+            null;
+
+        const probability =
+            disasterRisk.probability ??
+            disasterRisk.prediction?.probability ??
+            null;
+
+        return {
+            risk,
+            probability
+        };
+    };
+
+
+    // =====================================================
+    // FETCH DASHBOARD DATA
+    // =====================================================
+
+    const fetchDashboardData = async (
+        latitude,
+        longitude
+    ) => {
+        try {
+            setDataLoading(true);
+            setDisasterError("");
+
+            const token =
+                localStorage.getItem("token");
+
+            if (!token) {
+                throw new Error(
+                    "No authentication token found. Please login again."
+                );
             }
-        );
 
-        // Axios already gives parsed JSON in response.data
-        const data = response.data;
 
-        console.log("Backend dashboard data:", data);
+            console.log(
+                "Fetching dashboard for:",
+                latitude,
+                longitude
+            );
 
-        setDashboardData({
-            activeAlerts: data.activeAlerts ?? 0,
 
-            nearbyHospitals:
-                data.nearbyHospitals ?? 0,
+            // =================================================
+            // CALL BACKEND
+            // =================================================
+            //
+            // Backend is responsible for:
+            //
+            // 1. Getting weather from weather API
+            // 2. Preparing ML features
+            // 3. Calling Flask ML service
+            // 4. Returning ML prediction
+            //
+            // Frontend only sends latitude + longitude.
+            // =================================================
 
-            nearbyShelters:
-                data.nearbyShelters ?? 0,
+            const response = await api.get(
+                `/api/dashboard?lat=${latitude}&lng=${longitude}`,
+                {
+                    headers: {
+                        Authorization:
+                            `Bearer ${token}`
+                    }
+                }
+            );
 
-            riskLevel:
-                data.riskLevel ?? "Unknown",
 
-            alerts:
-                Array.isArray(data.alerts)
-                    ? data.alerts
-                    : [],
+            const data = response.data;
 
-            hospitals:
-                Array.isArray(data.hospitals)
-                    ? data.hospitals
-                    : [],
 
-            shelters:
-                Array.isArray(data.shelters)
-                    ? data.shelters
-                    : [],
-        });
+            console.log(
+                "================================"
+            );
 
-    } catch (error) {
+            console.log(
+                "BACKEND DASHBOARD RESPONSE:",
+                data
+            );
 
-        console.error(
-            "Dashboard API error:",
-            error.response?.data || error
-        );
+            console.log(
+                "DISASTER ML FROM DASHBOARD:",
+                data.disasterRisk
+            );
 
-        setDashboardData({
-            activeAlerts: 0,
-            nearbyHospitals: 0,
-            nearbyShelters: 0,
-            riskLevel: "Unavailable",
-            alerts: [],
-            hospitals: [],
-            shelters: [],
-        });
+            console.log(
+                "WEATHER FROM BACKEND:",
+                data.weather
+            );
 
-    } finally {
-        setDataLoading(false);
-    }
-};
+            console.log(
+                "================================"
+            );
 
-const fetchDisasterRisk = async () => {
-    try {
-        const response = await api.post(`/api/risk-zones/predict-disaster`, {
-            rainfall: 50,
-            river_level: 3,
-            humidity: 80,
-            temperature: 30,
-            previous_floods: 2,
-        });
 
-        const data = response.data;
-        console.log("Disaster ML response:", data);
+            // =================================================
+            // CHECK RESPONSE
+            // =================================================
 
-        if (data.success) {
-            setDisasterRisk(data);
+            if (!data) {
+                throw new Error(
+                    "Empty response received from backend"
+                );
+            }
+
+
+            // =================================================
+            // EXTRACT ML DATA
+            // =================================================
+
+            const disasterRisk =
+                data.disasterRisk || null;
+
+            const {
+                risk,
+                probability
+            } =
+                extractRiskData(disasterRisk);
+
+
+            // =================================================
+            // CONVERT PROBABILITY TO SCORE
+            // =================================================
+
+            let riskScore = 0;
+
+            if (
+                probability !== null &&
+                probability !== undefined
+            ) {
+                const numericProbability =
+                    Number(probability);
+
+                if (
+                    Number.isFinite(
+                        numericProbability
+                    )
+                ) {
+                    riskScore =
+                        Math.round(
+                            Math.max(
+                                0,
+                                Math.min(
+                                    1,
+                                    numericProbability
+                                )
+                            ) * 100
+                        );
+                }
+            }
+
+
+            // =================================================
+            // NORMALIZE RISK LEVEL
+            // =================================================
+
+            const finalRisk =
+                risk ||
+                data.riskLevel ||
+                "Unknown";
+
+
+            // =================================================
+            // SAVE ALL DATA
+            // =================================================
+
+            setDashboardData({
+
+                activeAlerts:
+                    data.activeAlerts ?? 0,
+
+                nearbyHospitals:
+                    data.nearbyHospitals ?? 0,
+
+                nearbyShelters:
+                    data.nearbyShelters ?? 0,
+
+                riskLevel:
+                    finalRisk,
+
+                riskScore:
+                    riskScore,
+
+                alerts:
+                    Array.isArray(data.alerts)
+                        ? data.alerts
+                        : [],
+
+                hospitals:
+                    Array.isArray(data.hospitals)
+                        ? data.hospitals
+                        : [],
+
+                shelters:
+                    Array.isArray(data.shelters)
+                        ? data.shelters
+                        : [],
+
+                disasterRisk:
+                    disasterRisk,
+
+                weather:
+                    data.weather || null,
+
+                features:
+                    data.features || null
+            });
+
+
+            // =================================================
+            // ML ERROR CHECK
+            // =================================================
+
+            if (
+                disasterRisk &&
+                disasterRisk.success === false
+            ) {
+                setDisasterError(
+                    disasterRisk.message ||
+                    disasterRisk.error ||
+                    "Disaster prediction failed"
+                );
+            } else {
+                setDisasterError("");
+            }
+
+
+            // =================================================
+            // DEBUG INFORMATION
+            // =================================================
+
+            console.log(
+                "FINAL RISK:",
+                finalRisk
+            );
+
+            console.log(
+                "FINAL PROBABILITY:",
+                probability
+            );
+
+            console.log(
+                "FINAL RISK SCORE:",
+                riskScore
+            );
+
         }
-    } catch (error) {
-        console.error("Disaster ML error:", error.response?.data || error.message);
-    }
-};
+
+        catch (error) {
+
+            console.error(
+                "Dashboard API error:",
+                error.response?.data ||
+                error
+            );
 
 
-         
+            const backendError =
+                error.response?.data;
+
+
+            setDisasterError(
+                backendError?.message ||
+                backendError?.error ||
+                error.message ||
+                "Unable to load dashboard data"
+            );
+
+
+            // Do NOT destroy previously loaded data.
+            // Keep empty arrays safe for UI.
+
+            setDashboardData({
+                activeAlerts: 0,
+                nearbyHospitals: 0,
+                nearbyShelters: 0,
+
+                riskLevel: "Unavailable",
+                riskScore: 0,
+
+                alerts: [],
+                hospitals: [],
+                shelters: [],
+
+                disasterRisk: null,
+                weather: null,
+                features: null
+            });
+
+        }
+
+        finally {
+            setDataLoading(false);
+        }
+    };
+
 
     // =====================================================
     // GET CURRENT LOCATION
@@ -181,15 +415,14 @@ const fetchDisasterRisk = async () => {
 
 
         setLocationLoading(true);
-
         setLocationError("");
-
         setLocationAccuracy(null);
+        setDisasterError("");
 
 
-        // -------------------------------------------------
-        // CHECK BROWSER SUPPORT
-        // -------------------------------------------------
+        // =================================================
+        // BROWSER SUPPORT
+        // =================================================
 
         if (!navigator.geolocation) {
 
@@ -203,79 +436,107 @@ const fetchDisasterRisk = async () => {
         }
 
 
-        // -------------------------------------------------
-        // GET LOCATION
-        // -------------------------------------------------
+        // =================================================
+        // GET REAL GPS LOCATION
+        // =================================================
 
         navigator.geolocation.getCurrentPosition(
 
-            (position) => {
+            async (position) => {
 
-                console.log(
-                    "Location received:",
-                    position
-                );
+                try {
 
+                    const latitude =
+                        position.coords.latitude;
 
-                const latitude =
-                    position.coords.latitude;
+                    const longitude =
+                        position.coords.longitude;
 
-                const longitude =
-                    position.coords.longitude;
-
-                const accuracy =
-                    position.coords.accuracy;
+                    const accuracy =
+                        position.coords.accuracy;
 
 
-                console.log(
-                    "Latitude:",
-                    latitude
-                );
+                    console.log(
+                        "Latitude:",
+                        latitude
+                    );
 
-                console.log(
-                    "Longitude:",
-                    longitude
-                );
+                    console.log(
+                        "Longitude:",
+                        longitude
+                    );
 
-                console.log(
-                    "Accuracy:",
-                    accuracy,
-                    "meters"
-                );
-
-
-                // -------------------------------------------------
-                // SAVE LOCATION
-                // -------------------------------------------------
-
-                setLocation({
-
-                    latitude: latitude,
-
-                    longitude: longitude
-
-                });
+                    console.log(
+                        "Accuracy:",
+                        accuracy,
+                        "meters"
+                    );
 
 
-                setLocationAccuracy(
-                    accuracy
-                );
+                    // =================================================
+                    // SAVE LOCATION
+                    // =================================================
+
+                    setLocation({
+                        latitude,
+                        longitude
+                    });
 
 
-                setLocationLoading(false);
+                    setLocationAccuracy(
+                        accuracy
+                    );
 
 
-                // -------------------------------------------------
-                // FETCH LOCATION-BASED DATA
-                // -------------------------------------------------
+                    setLocationLoading(false);
 
-                fetchDashboardData(
-                    latitude,
-                    longitude
-                );
+
+                    // =================================================
+                    // FETCH EVERYTHING FROM BACKEND
+                    // =================================================
+                    //
+                    // IMPORTANT:
+                    //
+                    // Only ONE API call is required.
+                    //
+                    // /api/dashboard
+                    //
+                    // Backend handles:
+                    //
+                    // GPS
+                    // ↓
+                    // Weather API
+                    // ↓
+                    // ML service
+                    // ↓
+                    // Dashboard response
+                    //
+                    // =================================================
+
+                    await fetchDashboardData(
+                        latitude,
+                        longitude
+                    );
+
+                }
+
+                catch (error) {
+
+                    console.error(
+                        "Location processing error:",
+                        error
+                    );
+
+                    setLocationLoading(false);
+
+                }
 
             },
 
+
+            // =================================================
+            // GEOLOCATION ERROR
+            // =================================================
 
             (error) => {
 
@@ -328,17 +589,18 @@ const fetchDisasterRisk = async () => {
             },
 
 
+            // =================================================
+            // GEOLOCATION OPTIONS
+            // =================================================
+
             {
                 enableHighAccuracy: true,
 
                 timeout: 30000,
 
                 maximumAge: 0
-
             }
-
         );
-
     };
 
 
@@ -349,9 +611,117 @@ const fetchDisasterRisk = async () => {
     useEffect(() => {
 
         getCurrentLocation();
-        fetchDisasterRisk();
 
     }, []);
+
+
+    // =====================================================
+    // QUICK ACTION
+    // =====================================================
+
+    const handleQuickAction = (path) => {
+        navigate(path);
+    };
+
+
+    // =====================================================
+    // RISK SCORE
+    // =====================================================
+
+    const getRiskScore = () => {
+
+        if (dataLoading) {
+            return 0;
+        }
+
+
+        const disasterRisk =
+            dashboardData.disasterRisk;
+
+
+        const {
+            probability
+        } =
+            extractRiskData(
+                disasterRisk
+            );
+
+
+        if (
+            probability !== null &&
+            probability !== undefined
+        ) {
+
+            const numericProbability =
+                Number(probability);
+
+
+            if (
+                Number.isFinite(
+                    numericProbability
+                )
+            ) {
+
+                return Math.round(
+                    Math.max(
+                        0,
+                        Math.min(
+                            1,
+                            numericProbability
+                        )
+                    ) * 100
+                );
+            }
+        }
+
+
+        return Number(
+            dashboardData.riskScore
+        ) || 0;
+    };
+
+
+    // =====================================================
+    // RISK LEVEL
+    // =====================================================
+
+    const getRiskLevel = () => {
+
+        if (dataLoading) {
+            return "Loading...";
+        }
+
+
+        const disasterRisk =
+            dashboardData.disasterRisk;
+
+
+        const {
+            risk
+        } =
+            extractRiskData(
+                disasterRisk
+            );
+
+
+        if (risk) {
+            return String(risk).toUpperCase();
+        }
+
+
+        if (
+            dashboardData.riskLevel &&
+            dashboardData.riskLevel !== "Unknown"
+        ) {
+            return String(
+                dashboardData.riskLevel
+            ).toUpperCase();
+        }
+
+
+        return "Unknown";
+    };
+
 
 
     // =====================================================
@@ -359,69 +729,52 @@ const fetchDisasterRisk = async () => {
     // =====================================================
 
     return (
-
         <div className="dashboard-page">
 
-
-            {/* =========================================
+            {/* =================================================
                 NAVBAR
-            ========================================= */}
+            ================================================= */}
 
             <Navbar />
 
 
             <main className="dashboard-container">
 
-
-                {/* =====================================
+                {/* =================================================
                     WELCOME HEADER
-                ===================================== */}
+                ================================================= */}
 
                 <div className="dashboard-header">
 
                     <div>
 
                         <h1>
-
                             Welcome back, {userName}!
-
                         </h1>
 
-
                         <p>
-
                             Stay informed and stay safe
                             with ResQ.
-
                         </p>
 
                     </div>
 
 
-                    {/* LOCATION BUTTON */}
-
                     <button
-
                         className="location-button"
-
                         onClick={
                             getCurrentLocation
                         }
-
                         disabled={
                             locationLoading
                         }
-
                     >
 
                         📍{" "}
 
                         {locationLoading
-
                             ? "Detecting Location..."
-
                             : "Use My Current Location"
-
                         }
 
                     </button>
@@ -429,20 +782,17 @@ const fetchDisasterRisk = async () => {
                 </div>
 
 
-                {/* =====================================
+                {/* =================================================
                     LOCATION STATUS
-                ===================================== */}
+                ================================================= */}
 
                 <div className="location-status">
-
 
                     {locationLoading && (
 
                         <p>
-
                             📍 Detecting your current
                             location...
-
                         </p>
 
                     )}
@@ -453,24 +803,17 @@ const fetchDisasterRisk = async () => {
                         <div>
 
                             <p className="location-error">
-
                                 ⚠️ {locationError}
-
                             </p>
 
 
                             <button
-
                                 className="location-button"
-
                                 onClick={
                                     getCurrentLocation
                                 }
-
                             >
-
                                 Try Again
-
                             </button>
 
                         </div>
@@ -478,39 +821,73 @@ const fetchDisasterRisk = async () => {
                     )}
 
 
-                {location && !locationLoading && (
+                    {location &&
+                        !locationLoading && (
 
-                    <div className="location-success">
+                            <div className="location-success">
 
-                        <p>
-                            📍 <strong>Location detected</strong>
-                        </p>
+                                <p>
 
-                        <p>
-                            Latitude: {location.latitude.toFixed(6)}
-                        </p>
+                                    📍{" "}
 
-                        <p>
-                            Longitude: {location.longitude.toFixed(6)}
-                        </p>
+                                    <strong>
+                                        Location detected
+                                    </strong>
 
-                        <p>
-                            Accuracy: approximately{" "}
-                            {Math.round(locationAccuracy)}m
-                        </p>
+                                </p>
 
-                    </div>
 
-                )}
+                                <p>
+
+                                    Latitude:{" "}
+
+                                    {location.latitude.toFixed(
+                                        6
+                                    )}
+
+                                </p>
+
+
+                                <p>
+
+                                    Longitude:{" "}
+
+                                    {location.longitude.toFixed(
+                                        6
+                                    )}
+
+                                </p>
+
+
+                                <p>
+
+                                    Accuracy: approximately{" "}
+
+                                    {locationAccuracy
+                                        ? Math.round(
+                                            locationAccuracy
+                                        )
+                                        : "--"
+                                    }m
+
+                                </p>
+
+                            </div>
+
+                        )}
+
                 </div>
 
 
-                {/* =====================================
+                {/* =================================================
                     TOP DASHBOARD CARDS
-                ===================================== */}
+                ================================================= */}
 
                 <div className="dashboard-cards">
 
+                    {/* =================================================
+                        ACTIVE ALERTS
+                    ================================================= */}
 
                     <AlertCard
 
@@ -527,122 +904,256 @@ const fetchDisasterRisk = async () => {
                     />
 
 
+                    {/* =================================================
+                        HOSPITALS
+                    ================================================= */}
+
                     <div className="dashboard-card">
 
                         <div className="card-icon">
-
                             🏥
-
                         </div>
 
 
                         <div>
 
                             <h3>
-
                                 Nearby Hospitals
-
                             </h3>
 
 
                             <p className="card-number">
 
                                 {dataLoading
-
                                     ? "..."
-
-                                    : dashboardData
-                                        .nearbyHospitals
-
+                                    : (
+                                        dashboardData?.nearbyHospitals ??
+                                        dashboardData?.hospitals?.length ??
+                                        0
+                                    )
                                 }
 
                             </p>
 
 
                             <span>
-
                                 Near your location
-
                             </span>
 
                         </div>
 
                     </div>
 
+
+                    {/* =================================================
+                        SHELTERS
+                    ================================================= */}
 
                     <div className="dashboard-card">
 
                         <div className="card-icon">
-
                             🏠
-
                         </div>
 
 
                         <div>
 
                             <h3>
-
                                 Nearby Shelters
-
                             </h3>
 
 
                             <p className="card-number">
 
                                 {dataLoading
-
                                     ? "..."
-
-                                    : dashboardData
-                                        .nearbyShelters
-
+                                    : (
+                                        dashboardData?.nearbyShelters ??
+                                        dashboardData?.shelters?.length ??
+                                        0
+                                    )
                                 }
 
                             </p>
 
 
                             <span>
-
                                 Near your location
-
                             </span>
 
                         </div>
 
                     </div>
 
+
+                    {/* =================================================
+                        REAL ML RISK CARD
+                    ================================================= */}
 
                     <RiskCard
+
                         riskLevel={
-                            dataLoading
-                            ? "Loading..."
-                                : disasterRisk?.success
-                            ? disasterRisk.risk
-                                : dashboardData.riskLevel
+                            getRiskLevel()
                         }
+
                         riskScore={
-                            dataLoading
-                                ? 0
-                                : disasterRisk?.success
-                            ? Math.round(disasterRisk.probability * 100)
-                                : dashboardData.riskScore ?? 0
-                            }
+                            getRiskScore()
+                        }
+
                     />
 
                 </div>
 
 
-                {/* =====================================
+                {/* =================================================
+                    WEATHER / ML INFORMATION
+                ================================================= */}
+
+                {dashboardData.weather && (
+
+                    <div className="dashboard-section">
+
+                        <div className="section-heading">
+
+                            <div>
+
+                                <h2>
+                                    Current Environmental Conditions
+                                </h2>
+
+                                <p>
+                                    Data used by the disaster prediction model.
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        <div className="dashboard-cards">
+
+                            <div className="dashboard-card">
+
+                                <div className="card-icon">
+                                    🌧️
+                                </div>
+
+                                <div>
+
+                                    <h3>
+                                        Rainfall
+                                    </h3>
+
+                                    <p className="card-number">
+
+                                        {dashboardData.weather.rainfall ??
+                                            "--"}
+
+                                    </p>
+
+                                    <span>
+                                        mm
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+
+                            <div className="dashboard-card">
+
+                                <div className="card-icon">
+                                    💧
+                                </div>
+
+                                <div>
+
+                                    <h3>
+                                        Humidity
+                                    </h3>
+
+                                    <p className="card-number">
+
+                                        {dashboardData.weather.humidity ??
+                                            "--"}
+
+                                    </p>
+
+                                    <span>
+                                        %
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+
+                            <div className="dashboard-card">
+
+                                <div className="card-icon">
+                                    🌡️
+                                </div>
+
+                                <div>
+
+                                    <h3>
+                                        Temperature
+                                    </h3>
+
+                                    <p className="card-number">
+
+                                        {dashboardData.weather.temperature ??
+                                            "--"}
+
+                                    </p>
+
+                                    <span>
+                                        °C
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                )}
+
+
+                {/* =================================================
+                    ML ERROR
+                ================================================= */}
+
+                {disasterError && (
+
+                    <div className="location-error">
+
+                        ⚠️ Disaster prediction:
+
+                        {" "}
+
+                        {disasterError}
+
+                    </div>
+
+                )}
+
+
+                {/* =================================================
                     MAP + SOS
-                ===================================== */}
+                ================================================= */}
 
                 <div className="map-sos-layout">
 
+                    {/* =================================================
+                        MAP
+                    ================================================= */}
 
-                    {/* MAP */}
-
-                    <section className="dashboard-section map-section">
+                    <section
+                        className="dashboard-section map-section"
+                    >
 
                         <div className="section-heading">
 
@@ -664,7 +1175,9 @@ const fetchDisasterRisk = async () => {
 
                         <Map
 
-                            location={location}
+                            location={
+                                location
+                            }
 
                             alerts={
                                 dashboardData.alerts
@@ -683,14 +1196,16 @@ const fetchDisasterRisk = async () => {
                     </section>
 
 
-                    {/* SOS */}
+                    {/* =================================================
+                        SOS
+                    ================================================= */}
 
-                    <section className="dashboard-section sos-section">
+                    <section
+                        className="dashboard-section sos-section"
+                    >
 
                         <SOSCard
-
                             location={location}
-
                         />
 
                     </section>
@@ -698,102 +1213,180 @@ const fetchDisasterRisk = async () => {
                 </div>
 
 
-                {/* =====================================
+                {/* =================================================
                     QUICK ACTIONS
-                ===================================== */}
+                ================================================= */}
 
-                <section className="dashboard-section">
+                <section
+                    className="dashboard-section"
+                >
 
                     <h2>
-
                         Quick Actions
-
                     </h2>
 
 
                     <div className="quick-actions">
 
-                        <QuickActionCard
+                        <div
+                            className="quick-action-wrapper"
+                            onClick={() =>
+                                handleQuickAction(
+                                    "/safe-routes"
+                                )
+                            }
+                        >
 
-                            title="Safe Routes"
+                            <QuickActionCard
+                                title="Safe Routes"
+                                icon="🛣️"
+                                path="/safe-routes"
+                            />
 
-                            icon="🛣️"
-
-                            path="/safe-routes"
-
-                        />
-
-
-                        <QuickActionCard
-
-                            title="Hospitals"
-
-                            icon="🏥"
-
-                            path="/hospitals"
-
-                        />
+                        </div>
 
 
-                        <QuickActionCard
+                        <div
+                            className="quick-action-wrapper"
+                            onClick={() =>
+                                handleQuickAction(
+                                    "/hospitals"
+                                )
+                            }
+                        >
 
-                            title="Shelters"
+                            <QuickActionCard
+                                title="Hospitals"
+                                icon="🏥"
+                                path="/hospitals"
+                            />
 
-                            icon="🏠"
-
-                            path="/shelters"
-
-                        />
+                        </div>
 
 
-                        <QuickActionCard
+                        <div
+                            className="quick-action-wrapper"
+                            onClick={() =>
+                                handleQuickAction(
+                                    "/shelters"
+                                )
+                            }
+                        >
 
-                            title="Emergency Resources"
+                            <QuickActionCard
+                                title="Shelters"
+                                icon="🏠"
+                                path="/shelters"
+                            />
 
-                            icon="📦"
+                        </div>
 
-                            path="/resources"
 
-                        />
+                        <div
+                            className="quick-action-wrapper"
+                            onClick={() =>
+                                handleQuickAction(
+                                    "/resources"
+                                )
+                            }
+                        >
+
+                            <QuickActionCard
+                                title="Emergency Resources"
+                                icon="📦"
+                                path="/resources"
+                            />
+
+                        </div>
+
+
+                        <div
+                            className="quick-action-wrapper"
+                            onClick={() =>
+                                handleQuickAction(
+                                    "/volunteers"
+                                )
+                            }
+                        >
+
+                            <QuickActionCard
+                                title="Volunteers & NGOs"
+                                icon="🤝"
+                                path="/volunteers"
+                            />
+
+                        </div>
 
                     </div>
 
                 </section>
 
 
-                {/* =====================================
+                {/* =================================================
                     DISASTER ALERTS
-                ===================================== */}
+                ================================================= */}
 
-                <section className="dashboard-section">
+                <section
+                    className="dashboard-section"
+                >
+
                     <div className="section-heading">
+
                         <div>
-                            <h2>Disaster Alerts</h2>
-                            <p>Alerts affecting your area.</p>
+
+                            <h2>
+                                Disaster Alerts
+                            </h2>
+
+                            <p>
+                                Alerts affecting your area.
+                            </p>
+
                         </div>
+
                     </div>
+
+
                     <div className="alerts-list">
+
                         {dashboardData.alerts.length === 0 && (
-                            <p className="no-alerts">No active alerts near your location.</p>
+
+                            <p className="no-alerts">
+
+                                No active alerts near
+                                your location.
+
+                            </p>
+
                         )}
+
+
                         {dashboardData.alerts.map(
                             (alert, index) => (
-                            <DisasterAlert
-                                key={alert.id || index}
-                                alert={alert}
-                            />
+
+                                <DisasterAlert
+
+                                    key={
+                                        alert.id ||
+                                        alert._id ||
+                                        index
+                                    }
+
+                                    alert={alert}
+
+                                />
+
                             )
                         )}
-                    </div>
-                </section>
 
+                    </div>
+
+                </section>
 
             </main>
 
         </div>
-
     );
-
 }
 
 

@@ -2,26 +2,26 @@ import React from "react";
 import "./RiskCard.css";
 
 const RiskCard = ({
-    riskLevel = "Loading...",
-    riskScore = 0,
+    riskLevel = "LOW",
+    riskScore = 0
 }) => {
 
-    // Normalize value only for CSS comparison
-    const normalizedRisk = String(riskLevel).toLowerCase();
+    const normalizedRisk =
+        String(riskLevel).toUpperCase();
 
     const getRiskClass = () => {
 
         if (
-            normalizedRisk === "high" ||
-            normalizedRisk === "critical"
+            normalizedRisk === "HIGH" ||
+            normalizedRisk === "CRITICAL"
         ) {
             return "high";
         }
 
         if (
-            normalizedRisk === "medium" ||
-            normalizedRisk === "moderate" ||
-            normalizedRisk === "warning"
+            normalizedRisk === "MEDIUM" ||
+            normalizedRisk === "MODERATE" ||
+            normalizedRisk === "WARNING"
         ) {
             return "medium";
         }
@@ -29,8 +29,7 @@ const RiskCard = ({
         return "low";
     };
 
-    // Make sure score stays between 0 and 100
-    const safeRiskScore = Math.min(
+    const score = Math.min(
         100,
         Math.max(
             0,
@@ -38,17 +37,11 @@ const RiskCard = ({
         )
     );
 
-    // Display risk level nicely
-    const displayRiskLevel =
-        String(riskLevel)
-            .toUpperCase();
-
     return (
         <div
             className={`risk-card ${getRiskClass()}`}
         >
 
-            {/* Header */}
             <div className="risk-header">
 
                 <div>
@@ -58,7 +51,7 @@ const RiskCard = ({
                     </span>
 
                     <h2>
-                        {displayRiskLevel}
+                        {normalizedRisk}
                     </h2>
 
                 </div>
@@ -69,21 +62,17 @@ const RiskCard = ({
 
             </div>
 
-
-            {/* Risk meter */}
             <div className="risk-meter">
 
                 <div
                     className="risk-meter-fill"
                     style={{
-                        width: `${safeRiskScore}%`,
+                        width: `${score}%`
                     }}
                 />
 
             </div>
 
-
-            {/* Score */}
             <div className="risk-footer">
 
                 <span>
@@ -91,16 +80,14 @@ const RiskCard = ({
                 </span>
 
                 <strong>
-                    {safeRiskScore}/100
+                    {score}/100
                 </strong>
 
             </div>
 
-
-            {/* Description */}
             <p>
-                Based on current disaster and environmental
-                conditions in your area.
+                Based on current disaster and
+                environmental conditions in your area.
             </p>
 
         </div>
