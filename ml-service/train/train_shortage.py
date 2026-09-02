@@ -1,16 +1,15 @@
 import os
 import pandas as pd
 import joblib
+import numpy as np
 
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import (
     mean_absolute_error,
     mean_squared_error,
     r2_score
 )
-
-import numpy as np
 
 
 BASE_DIR = os.path.dirname(
@@ -43,8 +42,11 @@ df = pd.read_csv(DATA_PATH)
 print("\nDataset:")
 print(df.head())
 
-print("\nShape:")
+print("\nDataset shape:")
 print(df.shape)
+
+print("\nMissing values:")
+print(df.isnull().sum())
 
 
 # =========================================================
@@ -65,7 +67,7 @@ y = df["hours_until_shortage"]
 
 
 # =========================================================
-# TRAIN TEST SPLIT
+# TRAIN / TEST SPLIT
 # =========================================================
 
 X_train, X_test, y_train, y_test = train_test_split(
@@ -74,6 +76,9 @@ X_train, X_test, y_train, y_test = train_test_split(
     test_size=0.2,
     random_state=42
 )
+
+print("\nTraining samples:", len(X_train))
+print("Testing samples:", len(X_test))
 
 
 # =========================================================
@@ -136,7 +141,7 @@ print("RESOURCE SHORTAGE MODEL")
 print("================================")
 
 print(
-    f"MAE: {mae:.2f} hours"
+    f"MAE : {mae:.2f} hours"
 )
 
 print(
@@ -144,7 +149,52 @@ print(
 )
 
 print(
-    f"R² Score: {r2:.4f}"
+    f"R²  : {r2:.4f}"
+)
+
+
+# =========================================================
+# CROSS VALIDATION
+# =========================================================
+
+print("\nRunning 5-Fold Cross Validation...")
+
+cv_scores = cross_val_score(
+    model,
+    X,
+    y,
+    cv=5,
+    scoring="r2"
+)
+
+print(
+    "Cross Validation R² Scores:",
+    cv_scores
+)
+
+print(
+    f"Average CV R²: {cv_scores.mean():.4f}"
+)
+
+
+# =========================================================
+# FEATURE IMPORTANCE
+# =========================================================
+
+print("\nFeature Importance:")
+
+feature_importance = pd.DataFrame({
+    "feature": features,
+    "importance": model.feature_importances_
+})
+
+feature_importance = feature_importance.sort_values(
+    by="importance",
+    ascending=False
+)
+
+print(
+    feature_importance
 )
 
 

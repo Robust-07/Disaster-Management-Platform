@@ -14,7 +14,7 @@ os.makedirs(DATA_DIR, exist_ok=True)
 # DISASTER DATASET
 # =========================================================
 
-n = 10000
+n = 5000
 
 rainfall = np.random.uniform(0, 400, n)
 river_level = np.random.uniform(1, 10, n)
@@ -66,7 +66,7 @@ disaster_df.to_csv(disaster_path, index=False)
 # RESOURCE SHORTAGE DATASET
 # =========================================================
 
-n = 10000
+n = 5000
 
 population = np.random.randint(500, 20000, n)
 
@@ -148,7 +148,7 @@ print(resource_path)
 # SOS SEVERITY DATASET
 # =========================================================
 
-n = 10000
+n = 5000
 
 people_trapped = np.random.randint(1, 20, n)
 
@@ -198,21 +198,21 @@ communication_available = np.random.randint(
 # =========================================================
 
 severity_score = (
-    people_trapped * 1.0
-    + injured_people * 2.5
-    + critical_injuries * 5
-    + children_elderly * 1.0
-    + water_level * 2.0
-    + building_damage * 3.5
-    + hours_trapped * 0.8
-    + (1 - communication_available) * 4
+    people_trapped * 3
+    + injured_people * 7
+    + critical_injuries * 12
+    + children_elderly * 4
+    + water_level * 5
+    + building_damage * 8
+    + hours_trapped * 2
+    + (1 - communication_available) * 10
 )
 
 
 # Add randomness
 severity_score += np.random.normal(
     0,
-    5,
+    8,
     n
 )
 
@@ -233,16 +233,20 @@ severity = []
 
 for score in severity_score:
 
-    if score < 35:
+    if score < 25:
+
         severity.append("LOW")
 
-    elif score < 55:
+    elif score < 50:
+
         severity.append("MEDIUM")
 
     elif score < 75:
+
         severity.append("HIGH")
 
     else:
+
         severity.append("CRITICAL")
 
 
