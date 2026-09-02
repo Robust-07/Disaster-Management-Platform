@@ -131,7 +131,24 @@ function AuthorityDashboard() {
                     <h1>ResQ — Authority Dashboard</h1>
                     <p>Live emergency reports</p>
                 </div>
-                <button className="refresh-btn" onClick={fetchReports}>⟳ Refresh</button>
+                <div style={{ display: "flex", gap: "10px" }}>
+                    <button className="refresh-btn" onClick={() => navigate("/create-rescue-team")}>
+                        + New Team
+                    </button>
+                    <button className="refresh-btn" onClick={() => navigate("/create-resource")}>
+                        + List Resource
+                    </button>
+                    <button className="refresh-btn" onClick={() => navigate("/resource-requests")}>
+                        📦      Resource Requests
+                    </button>
+                    <button
+                        className="refresh-btn"
+                        onClick={() => navigate("/create-risk-zone")}
+                    >
+                        🚨 Create Risk Zone
+                    </button>
+                    <button className="refresh-btn" onClick={fetchReports}>⟳ Refresh</button>
+                </div>
             </header>
 
             {error && <p className="authority-error">⚠️ {error}</p>}

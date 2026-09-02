@@ -45,6 +45,7 @@ const predictSOSSeverity = async (features) => {
         } else {
             throw new Error('Invalid or unexpected ML service response format');
         }
+        
     } catch (err) {
         clearTimeout(timeoutId);
         console.warn('[ML Service Warning] Failed to reach Flask ML service:', err.message);

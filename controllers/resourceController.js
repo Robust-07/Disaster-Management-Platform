@@ -3,6 +3,9 @@ const ResourceRequest = require('../models/ResourceRequest.js');
 const { scoreResourceMatch, getDistanceKm } = require('../utils/resourceMatching.js');
 const predictShortage = require("../utils/shortagePrediction.js");
 
+//createResource, getNearByResources, getAllResources, createResourceRequest, getAllResourceRequests, matchResources, allocateResources
+//getShortageAlerts
+
 module.exports.createResource = async (req, res) => {
     try {
         const { type, quantity, longitude, latitude, transportAvailable } = req.body;
@@ -195,7 +198,9 @@ module.exports.allocateResource = async (req, res) => {
     	await request.save();
 
     	const io = req.app.get('io');
-    	io.emit('resource-allocated', { requestId: request._id, resourceId: resource._id });
+        if (io) {
+            io.emit('resource-allocated', { requestId: request._id, resourceId: resource._id });
+        }
 
     	res.status(200).json({ message: 'Resource allocated', request, resource });
   	} 

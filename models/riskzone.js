@@ -32,6 +32,19 @@ const riskZoneSchema = new mongoose.Schema(
 		active:{
 			type: Boolean,
 			default: true,
+		},
+		disasterType: {
+			type: String,
+			enum: [
+				"flood",
+				"cyclone",
+				"earthquake",
+				"landslide",
+				"wildfire",
+				"storm",
+				"other"
+			],
+			default: "other"
 		}
 	},
 	{ timestamps: true }

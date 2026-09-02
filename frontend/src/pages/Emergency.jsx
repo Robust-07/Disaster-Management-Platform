@@ -87,7 +87,7 @@ function Emergency() {
                         {liveStatus === "pending" ? "Request received" : liveStatus}
                     </div>
                     <p className="emergency-description">
-                        Severity: <strong>{sosReport.severityLabel}</strong> — Rescue assistance
+                        <h3>Severity: <strong>{sosReport.severityLabel}</strong></h3> — Rescue assistance
                         will be coordinated using your current location.
                     </p>
                 </section>

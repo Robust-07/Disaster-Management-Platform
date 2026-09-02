@@ -1,24 +1,24 @@
 const jwt = require('jsonwebtoken');
 
 const protect = (req, res, next) => {
-  let token;
+    let token;
 
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    token = authHeader.split(' ').filter(Boolean)[1];
-  }
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.split(' ').filter(Boolean)[1];
+    }
 
-  if (!token) {
-    return res.status(401).json({ message: 'Not authorized, no token provided' });
-  }
+    if (!token) {
+        return res.status(401).json({ message: 'Not authorized, no token provided' });
+    }
 
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // { id, role }
-    next();
-  } catch (err) {
-    return res.status(401).json({ message: 'Not authorized, invalid token' });
-  }
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = decoded; // { id, role }
+        next();
+    } catch (err) {
+        return res.status(401).json({ message: 'Not authorized, invalid token' });
+    }
 };
 
 const authorize = (...allowedRoles) => {

@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Resources.css";
-import api from "../api/axios"; 
-
-
+import api from "../api/axios";
 
 function Resources() {
     const navigate = useNavigate();
@@ -12,13 +10,12 @@ function Resources() {
     const [loading, setLoading] = useState(true);
     const [locationError, setLocationError] = useState("");
 
-    
-
     const fetchResources = async (latitude, longitude) => {
         try {
             setLoading(true);
+            // FIX: added /api prefix
             const response = await api.get(
-                `/resources/nearby?longitude=${longitude}&latitude=${latitude}`
+                `/api/resources/nearby?longitude=${longitude}&latitude=${latitude}`
             );
 
             const mapped = (response.data.resources || []).map((r) => ({
@@ -64,7 +61,6 @@ function Resources() {
     return (
         <div className="resources-page">
 
-            {/* Navbar */}
             <nav className="resources-navbar">
                 <div className="resources-logo" onClick={() => navigate("/dashboard")}>
                     Res<span>Q</span>
@@ -92,16 +88,12 @@ function Resources() {
                 </button>
             </nav>
 
-            {/* Main Content */}
             <main className="resources-container">
 
-                {/* Header */}
                 <section className="resources-header">
                     <div>
                         <p className="resources-label">RESQ SUPPORT</p>
-
                         <h1>Emergency Resources</h1>
-
                         <p>
                             Find essential supplies, shelters and emergency
                             support available near you.
@@ -117,11 +109,19 @@ function Resources() {
                     </div>
                 </section>
 
-                {/* Search */}
+                {/* FIX: new entry point for citizens to request resources */}
+                <section className="resources-actions-row">
+                    <button
+                        className="request-resource-btn"
+                        onClick={() => navigate("/request-resource")}
+                    >
+                        + Request Resources for My Camp
+                    </button>
+                </section>
+
                 <section className="resources-search-section">
                     <div className="search-box">
                         <span>🔍</span>
-
                         <input
                             type="text"
                             placeholder="Search for resources..."
@@ -135,12 +135,12 @@ function Resources() {
                     </button>
                 </section>
 
-                {/* Quick Info */}
                 <section className="resource-info">
                     <div className="info-item">
                         <span>📦</span>
                         <div>
-                            <strong>63+</strong>
+                            {/* FIX: was hardcoded "63+" — now reflects real count */}
+                            <strong>{resources.length}</strong>
                             <small>Resources nearby</small>
                         </div>
                     </div>
@@ -162,9 +162,7 @@ function Resources() {
                     </div>
                 </section>
 
-                {/* Resource Cards */}
                 <section className="resources-section">
-
                     <div className="section-heading">
                         <div>
                             <h2>Available Resources</h2>
@@ -173,31 +171,29 @@ function Resources() {
                     </div>
 
                     <div className="resources-grid">
-
-                        {filteredResources.length > 0 ? (
+                        {loading ? (
+                            <p>Loading resources...</p>
+                        ) : locationError ? (
+                            <p className="location-error">{locationError}</p>
+                        ) : filteredResources.length > 0 ? (
                             filteredResources.map((resource) => (
                                 <div className="resource-card" key={resource.id}>
-
                                     <div className="resource-card-top">
                                         <div className="resource-icon">
                                             {resource.icon}
                                         </div>
-
                                         <span className="available-badge">
                                             Available
                                         </span>
                                     </div>
 
                                     <h3>{resource.title}</h3>
-
                                     <p>{resource.description}</p>
 
                                     <div className="resource-card-bottom">
-
                                         <span className="resource-count">
                                             {resource.available}
                                         </span>
-
                                         <button
                                             onClick={() =>
                                                 alert(
@@ -207,7 +203,6 @@ function Resources() {
                                         >
                                             View Details →
                                         </button>
-
                                     </div>
                                 </div>
                             ))
@@ -218,16 +213,12 @@ function Resources() {
                                 <p>Try searching for something else.</p>
                             </div>
                         )}
-
                     </div>
                 </section>
 
-                {/* Emergency Help */}
                 <section className="resources-emergency">
-
                     <div>
                         <span className="emergency-icon">🆘</span>
-
                         <div>
                             <h3>Need immediate emergency assistance?</h3>
                             <p>
@@ -237,12 +228,10 @@ function Resources() {
                         </div>
                     </div>
 
-                    <button
-                        onClick={() => navigate("/sos")}
-                    >
+                    {/* FIX: was navigate("/sos") — dead route */}
+                    <button onClick={() => navigate("/sos-form")}>
                         Activate SOS
                     </button>
-
                 </section>
 
             </main>

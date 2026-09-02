@@ -177,28 +177,7 @@ function CitizenDashboard() {
             const data = response.data;
 
 
-            console.log(
-                "================================"
-            );
-
-            console.log(
-                "BACKEND DASHBOARD RESPONSE:",
-                data
-            );
-
-            console.log(
-                "DISASTER ML FROM DASHBOARD:",
-                data.disasterRisk
-            );
-
-            console.log(
-                "WEATHER FROM BACKEND:",
-                data.weather
-            );
-
-            console.log(
-                "================================"
-            );
+           
 
 
             // =================================================
@@ -899,7 +878,17 @@ function CitizenDashboard() {
 
                         title="Active Alerts"
 
-                        subtitle="Near your location"
+                        subtitle={
+                            dashboardData.activeAlerts > 0
+                                ? "Require your attention"
+                                : "No active threats nearby"
+                        }
+
+                        severity = {
+                            dashboardData.activeAlerts > 0
+                                ? "danger"
+                                : "safe"
+                        }
 
                     />
 

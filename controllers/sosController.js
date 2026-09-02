@@ -3,6 +3,8 @@ const uploadBufferToCloudinary = require('../utils/cloudinaryUpload.js');
 const calculateSeverity = require('../utils/severity.js');
 const predictSOSSeverity = require('../utils/mlservice.js');
 
+//createSOS, 
+
 module.exports.createSOS = async (req, res) => {
     try {
         const {
@@ -188,7 +190,6 @@ module.exports.updateSOSStatus = async (req, res) => {
         report.status = status;
         await report.save();
 
-        // FIX: free up the assigned team when the SOS is resolved
         if (status === 'resolved' && report.assignedTeamId) {
             const RescueTeam = require('../models/RescueTeam');
             const team = await RescueTeam.findById(report.assignedTeamId);
@@ -213,9 +214,7 @@ module.exports.updateSOSStatus = async (req, res) => {
 
 module.exports.cancelSOS = async (req, res) => {
     try {
-        const report = await SOSReport.findById(
-            req.params.id
-        );
+        const report = await SOSReport.findById(req.params.id);
         if (!report) {
             return res.status(404).json({
                 success: false,
@@ -227,15 +226,13 @@ module.exports.cancelSOS = async (req, res) => {
         if (!isOwner && !isAuthority) {
             return res.status(403).json({
                 success: false,
-                message:
-                    'Not authorized to cancel this SOS report'
+                message: 'Not authorized to cancel this SOS report'
             });
         }
         report.status = 'resolved';
         report.cancelledAt = new Date();
         await report.save();
 
-        // FIX: free up the assigned team here too
         if (report.assignedTeamId) {
             const RescueTeam = require('../models/RescueTeam');
             const team = await RescueTeam.findById(report.assignedTeamId);
@@ -260,6 +257,10 @@ module.exports.cancelSOS = async (req, res) => {
 
 module.exports.assignRescueTeam = async (req, res) => {
     try {
+        console.log("ASSIGN USER:", req.user);
+        console.log("ASSIGN ROLE:", req.user?.role);
+        console.log("ASSIGN BODY:", req.body);
+
         const { teamId } = req.body;
         if (!teamId) {
             return res.status(400).json({ message: 'teamId is required' });

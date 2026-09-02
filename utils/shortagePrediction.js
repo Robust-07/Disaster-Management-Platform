@@ -78,18 +78,12 @@ const predictShortage = async (features) => {
             hoursUntilShortage = 999;
         }
         else {
-            const dailyRequirement =
-                payload.daily_consumption;
-
-            const days =
-                availableStock / dailyRequirement;
-
-            hoursUntilShortage =
-                days * 24;
+            const dailyRequirement = payload.daily_consumption;
+            const days = availableStock / dailyRequirement;
+            hoursUntilShortage = days * 24;
         }
 
-        hoursUntilShortage =
-            Math.max(0, hoursUntilShortage);
+        hoursUntilShortage = Math.max(0, hoursUntilShortage);
 
         let status;
 
@@ -108,12 +102,8 @@ const predictShortage = async (features) => {
 
         return {
             success: false,
-
-            hoursUntilShortage:
-                Math.round(hoursUntilShortage * 100) / 100,
-
+            hoursUntilShortage: Math.round(hoursUntilShortage * 100) / 100,
             status,
-
             mlStatus: 'FALLBACK_MANUAL'
         };
     }

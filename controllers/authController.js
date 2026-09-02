@@ -7,6 +7,8 @@ const generateToken = (userId, role)=>{
     });
 };
 
+//signup, login and getMe
+
 module.exports.signup = async(req,res) => {
     try{
         const {name, email, password, role, phone, longitude, latitude}  = req.body;
@@ -71,6 +73,7 @@ module.exports.login = async(req,res) => {
             return res.status(401).json({ message: 'Invalid email or password' });
         }
         const token = generateToken(user._id, user.role);
+
         res.status(200).json({
             token,
             user: {

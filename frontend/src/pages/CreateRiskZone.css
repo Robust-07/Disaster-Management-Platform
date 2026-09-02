@@ -1,0 +1,501 @@
+/* =========================
+   PAGE
+========================= */
+
+.create-risk-zone-page {
+    min-height: 100vh;
+    background: #f4f6fb;
+    padding-bottom: 50px;
+}
+
+
+/* =========================
+   CONTAINER
+========================= */
+
+.risk-zone-container {
+    max-width: 850px;
+    margin: 30px auto;
+    padding: 0 20px;
+}
+
+
+/* =========================
+   HEADER
+========================= */
+
+.risk-zone-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+
+    margin-bottom: 22px;
+}
+
+.risk-zone-header h1 {
+    margin: 0;
+
+    color: #172554;
+
+    font-size: 25px;
+    font-weight: 750;
+}
+
+.risk-zone-header p {
+    margin: 6px 0 0;
+
+    color: #6b7280;
+
+    font-size: 13px;
+}
+
+
+/* =========================
+   BACK BUTTON
+========================= */
+
+.back-btn {
+    border: 1px solid #d7dce7;
+
+    background: #fff;
+
+    color: #374151;
+
+    padding: 9px 15px;
+
+    border-radius: 8px;
+
+    font-size: 12px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: all 0.2s ease;
+}
+
+.back-btn:hover {
+    background: #f7f8fb;
+
+    transform: translateX(-2px);
+}
+
+
+/* =========================
+   MESSAGES
+========================= */
+
+.risk-zone-message {
+    padding: 12px 15px;
+
+    border-radius: 9px;
+
+    margin-bottom: 16px;
+
+    font-size: 13px;
+
+    font-weight: 500;
+}
+
+.error-message {
+    color: #b42318;
+
+    background: #fff1f0;
+
+    border: 1px solid #ffd1cc;
+
+    border-left: 4px solid #e63946;
+}
+
+.success-message {
+    color: #176b38;
+
+    background: #ecfdf3;
+
+    border: 1px solid #b7ebc6;
+
+    border-left: 4px solid #2ea043;
+}
+
+
+/* =========================
+   FORM
+========================= */
+
+.risk-zone-form {
+    background: #fff;
+
+    border: 1px solid #e5e8ef;
+
+    border-radius: 16px;
+
+    padding: 28px;
+
+    box-shadow: 0 5px 20px rgba(25, 35, 60, 0.06);
+}
+
+
+/* =========================
+   FORM GROUP
+========================= */
+
+.form-group {
+    display: flex;
+
+    flex-direction: column;
+
+    margin-bottom: 19px;
+
+    flex: 1;
+}
+
+.form-group label {
+    margin-bottom: 7px;
+
+    color: #374151;
+
+    font-size: 12px;
+
+    font-weight: 700;
+}
+
+.form-group label span {
+    color: #e63946;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+
+    box-sizing: border-box;
+
+    border: 1px solid #d9dde6;
+
+    border-radius: 9px;
+
+    padding: 11px 12px;
+
+    background: #fff;
+
+    color: #1f2937;
+
+    font-size: 13px;
+
+    outline: none;
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+    color: #a0a6b1;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    border-color: #3b5bdb;
+
+    box-shadow: 0 0 0 3px rgba(59, 91, 219, 0.10);
+}
+
+.form-group textarea {
+    resize: vertical;
+
+    min-height: 100px;
+
+    line-height: 1.5;
+}
+
+
+/* =========================
+   TWO COLUMN ROW
+========================= */
+
+.form-row {
+    display: flex;
+
+    gap: 16px;
+}
+
+
+/* =========================
+   LOCATION SECTION
+========================= */
+
+.location-section {
+    background: #f7f9fd;
+
+    border: 1px solid #e3e7f0;
+
+    border-radius: 12px;
+
+    padding: 18px;
+
+    margin-top: 5px;
+
+    margin-bottom: 22px;
+}
+
+.location-title {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    gap: 15px;
+
+    margin-bottom: 17px;
+}
+
+.location-title h2 {
+    margin: 0;
+
+    font-size: 15px;
+
+    color: #263552;
+}
+
+.location-title p {
+    margin: 4px 0 0;
+
+    color: #7a8291;
+
+    font-size: 11px;
+}
+
+
+/* =========================
+   LOCATION BUTTON
+========================= */
+
+.location-btn {
+    white-space: nowrap;
+
+    border: 1px solid #cfd7f0;
+
+    background: #edf1ff;
+
+    color: #3153b7;
+
+    padding: 8px 12px;
+
+    border-radius: 8px;
+
+    font-size: 11px;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition: all 0.2s ease;
+}
+
+.location-btn:hover {
+    background: #e1e7ff;
+
+    transform: translateY(-1px);
+}
+
+
+/* =========================
+   COORDINATE PREVIEW
+========================= */
+
+.coordinate-preview {
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    margin-top: 2px;
+
+    padding: 10px 12px;
+
+    background: #fff;
+
+    border: 1px solid #e2e6ee;
+
+    border-radius: 8px;
+}
+
+.coordinate-preview > span {
+    width: 32px;
+
+    height: 32px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    background: #edf1ff;
+
+    border-radius: 8px;
+
+    font-size: 15px;
+}
+
+.coordinate-preview strong {
+    display: block;
+
+    color: #374151;
+
+    font-size: 11px;
+}
+
+.coordinate-preview p {
+    margin: 3px 0 0;
+
+    color: #6b7280;
+
+    font-size: 11px;
+}
+
+
+/* =========================
+   FORM ACTIONS
+========================= */
+
+.form-actions {
+    display: flex;
+
+    justify-content: flex-end;
+
+    gap: 10px;
+
+    padding-top: 18px;
+
+    border-top: 1px solid #edf0f5;
+}
+
+
+/* =========================
+   CANCEL
+========================= */
+
+.cancel-btn {
+    background: #f0f1f4;
+
+    color: #374151;
+
+    border: none;
+
+    padding: 10px 18px;
+
+    border-radius: 8px;
+
+    font-size: 12px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: all 0.2s ease;
+}
+
+.cancel-btn:hover {
+    background: #e5e7eb;
+}
+
+
+/* =========================
+   CREATE BUTTON
+========================= */
+
+.create-zone-btn {
+    background: linear-gradient(135deg, #e63946, #c92f3c);
+
+    color: #fff;
+
+    border: none;
+
+    padding: 10px 20px;
+
+    border-radius: 8px;
+
+    font-size: 12px;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    box-shadow: 0 3px 8px rgba(230, 57, 70, 0.20);
+
+    transition: all 0.2s ease;
+}
+
+.create-zone-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+
+    box-shadow: 0 5px 12px rgba(230, 57, 70, 0.28);
+}
+
+.create-zone-btn:disabled {
+    opacity: 0.6;
+
+    cursor: not-allowed;
+}
+
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 650px) {
+
+    .risk-zone-container {
+        margin-top: 20px;
+
+        padding: 0 14px;
+    }
+
+    .risk-zone-header {
+        align-items: flex-start;
+
+        flex-direction: column;
+    }
+
+    .risk-zone-header h1 {
+        font-size: 21px;
+    }
+
+    .back-btn {
+        align-self: flex-start;
+    }
+
+    .risk-zone-form {
+        padding: 20px 16px;
+    }
+
+    .form-row {
+        flex-direction: column;
+
+        gap: 0;
+    }
+
+    .location-title {
+        align-items: flex-start;
+
+        flex-direction: column;
+    }
+
+    .location-btn {
+        width: 100%;
+    }
+
+    .form-actions {
+        flex-direction: column-reverse;
+    }
+
+    .cancel-btn,
+    .create-zone-btn {
+        width: 100%;
+    }
+}

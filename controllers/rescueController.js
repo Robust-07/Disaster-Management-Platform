@@ -1,5 +1,8 @@
 const RescueTeam = require("../models/RescueTeam.js");
 
+//createRescueTeam, getAllRescueTeams, getRescueTeamById, updateRescueTeam, deleteRescueTeam, updateTeamLocation, getNearbyTeams,
+//getMyAssignments, linkUserToTeam
+
 module.exports.createRescueTeam = async (req, res) => {
 	try {
 		const {name, organization, teamType, members, capabilities, equipment, latitude, longitude, availability, currentStatus, maxCapacity, responseRadius, rating} = req.body;
@@ -60,21 +63,18 @@ module.exports.updateRescueTeam = async (req, res) => {
       		return res.status(404).json({success: false,message: "Rescue team not found"});
         }
 		Object.assign(team, req.body);
-		if (
-      		req.body.latitude !== undefined ||
-      		req.body.longitude !== undefined
-    	) {
-      	const latitude = req.body.latitude !== undefined ? req.body.latitude: team.latitude;
-		const longitude = req.body.longitude !== undefined? req.body.longitude: team.longitude;
+		if (req.body.latitude !== undefined || req.body.longitude !== undefined) {
+			const latitude = req.body.latitude !== undefined ? req.body.latitude: team.latitude;
+			const longitude = req.body.longitude !== undefined? req.body.longitude: team.longitude;
 
-      	team.latitude = latitude;
-      	team.longitude = longitude;
+			team.latitude = latitude;
+			team.longitude = longitude;
 
-      	team.currentLocation = {
-        	type: "Point",
-        	coordinates: [longitude, latitude],
-      	};
-		team.lastLocationUpdate = new Date();
+			team.currentLocation = {
+				type: "Point",
+				coordinates: [longitude, latitude],
+			};
+		    team.lastLocationUpdate = new Date();
         }
 	    await team.save();
 

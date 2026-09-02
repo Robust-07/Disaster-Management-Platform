@@ -1,5 +1,7 @@
 const Volunteer = require('../models/Volunteer.js');
 
+//createVolunteer, getNearbyVolunteers, getAllVolunteers, matchVolunteers, updateAvailability
+
 module.exports.createVolunteer = async (req, res) => {
 	try {
     	const { skills, longitude, latitude, availability } = req.body;

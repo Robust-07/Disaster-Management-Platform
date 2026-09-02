@@ -1,7 +1,8 @@
 const express = require("express");
 const router = express.Router();
 
-const {createRescueTeam, getAllRescueTeams, getRescueTeamById, updateRescueTeam, deleteRescueTeam, updateTeamLocation, getNearbyTeams, getMyAssignments, linkUserToTeam} = require("../controllers/rescueController");
+const {createRescueTeam, getAllRescueTeams, getRescueTeamById, updateRescueTeam, deleteRescueTeam, updateTeamLocation, 
+getNearbyTeams, getMyAssignments, linkUserToTeam} = require("../controllers/rescueController");
 const {protect, authorize} = require('../middleware/authmiddleware.js');
 
 router.post("/", protect, authorize('authority'), createRescueTeam);
