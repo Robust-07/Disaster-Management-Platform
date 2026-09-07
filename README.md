@@ -135,7 +135,7 @@ disaster-management-backend/
 - Cloudinary account
 - (Optional) Weather API — currently uses keyless Open-Meteo
 
-### Backend
+### ⚙️Backend
 ```bash
 cd disaster-management-backend
 npm install
@@ -161,7 +161,7 @@ pip install -r requirements.txt
 python app.py     # runs on port 5001
 ```
 
-### Frontend
+### 🖼️ Frontend
 ```bash
 cd frontend
 npm install
