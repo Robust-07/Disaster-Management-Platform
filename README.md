@@ -30,3 +30,181 @@ ResQ addresses this by combining real-time coordination with predictive machine 
 | **Volunteers** | A structured way to plug into the response effort |
 
 ---
+
+## Tech Stack
+
+### Frontend
+- **React.js** (Vite)
+- **React Router** — navigation, protected & role-based routes
+- **Axios** — API calls with a centralized instance + JWT auto-attach interceptor
+- **Socket.io-client** — real-time bidirectional updates
+- **react-hot-toast** — notifications
+- **Leaflet** — live risk map with location markers
+
+### Backend
+- **Node.js + Express.js** — REST API layer
+- **MongoDB + Mongoose** — data persistence
+  - Collections: `User`, `SOSReport`, `RescueTeam`, `Resource`, `ResourceRequest`, `RiskZone`, `Shelter`
+  - Geospatial `2dsphere` indexes + `$near` queries for proximity-based matching
+- **Socket.io** (server) — real-time push events: new SOS, status updates, team assignment, resource allocation
+- **JWT authentication** with role-based authorization middleware (`protect`, `authorize`)
+- **Cloudinary** — SOS evidence photo upload/storage
+- **Helmet, Morgan, CORS** — security headers, request logging, cross-origin handling
+
+### Machine Learning
+- **Python + Flask** microservice (decoupled from the Node backend, communicates over HTTP)
+- **scikit-learn** models, serialized with `joblib`:
+  1. **Disaster Risk Prediction** — rainfall, river level, humidity, temperature, previous floods → risk level (LOW/MEDIUM/HIGH) + probability
+  2. **SOS Severity Classification** — people trapped, injuries, water level, building damage, hours trapped, communication status → severity (LOW/MEDIUM/HIGH/CRITICAL) + numeric score
+  3. **Resource Shortage Prediction** — population, current stock, daily consumption, incoming supply, people-per-unit → hours until shortage + status (CRITICAL/WARNING/MONITOR/SAFE)
+
+### External APIs
+- **Open-Meteo** — live weather data (rainfall, humidity, temperature) feeding the disaster risk model
+- **Browser Geolocation API** — citizen, SOS, and rescue team positioning
+
+### Architecture
+
+```
+React Frontend  →  Node/Express API  →  MongoDB (persistence)
+                         │
+                         ├──→  Flask ML Service (stateless predictions)
+                         │
+                         └──→  Socket.io (real-time layer)
+```
+
+A 3-tier architecture: the API layer owns business logic, auth, and data; the ML service is a pure, stateless prediction endpoint; Socket.io cuts across both layers to keep citizen and authority views in sync live.
+
+---
+
+## Core Features
+
+### 1. Citizen SOS Reporting
+- Structured form capturing 8 triage inputs (people trapped, injuries, critical injuries, children/elderly present, water level, building damage, hours trapped, communication availability)
+- Optional photo evidence uploaded to Cloudinary
+- Live GPS location capture, stored as GeoJSON
+- ML-driven severity classification (with a rule-based heuristic fallback if the ML service is unreachable)
+
+### 2. Authority Dashboard
+- Live list of all SOS reports, sorted and pushed in real time via Socket.io (no polling, no manual refresh)
+- Assign an available rescue team via a dropdown populated live from the database
+- Progress reports through `pending → assigned → in-progress → resolved`
+- Rescue teams automatically flip between `AVAILABLE`/`BUSY` as they're assigned/freed
+
+### 3. Rescue Team Management
+- Authorities can register new rescue teams (organization, type, capabilities, equipment, location) directly through the app
+
+### 4. Resource Requests & Shortage Prediction
+- Camp coordinators log resource needs (population, current stock, daily consumption)
+- ML model predicts hours until shortage and classifies urgency (CRITICAL/WARNING/MONITOR/SAFE)
+- Authority dashboard sorts requests by urgency automatically
+
+### 5. Resource Matching & Allocation
+- Matching algorithm scores available resources against a request by distance, quantity, and transport availability
+- Allocation updates both resource stock and request fulfillment atomically
+
+### 6. Real-Time Citizen Visibility
+- Citizens see their SOS status update live as authorities act on it — assignment, progress, and resolution all push instantly to the citizen's screen
+
+### 7. Role-Based Access Control
+- Backend middleware enforces role permissions on every route (not just hidden in the UI)
+- Frontend route guards (`ProtectedRoute` with `allowedRoles`) redirect unauthorized users away from restricted pages
+
+---
+
+## Project Structure (Backend)
+
+```
+disaster-management-backend/
+├── config/              # DB connection config
+├── controllers/         # Route handlers (auth, sos, rescue, resource, dashboard, riskZone, shelter, etc.)
+├── middleware/          # Auth (protect, authorize), file upload (multer)
+├── ml-service/          # Flask ML microservice (Python)
+├── models/              # Mongoose schemas
+├── routes/              # Express route definitions
+├── utils/                # ML service callers, weather service, resource matching, severity calc
+├── index.js             # App entry point
+└── package.json
+```
+
+---
+
+## Setup & Installation
+
+### Prerequisites
+- Node.js ≥ 18
+- Python 3.x
+- MongoDB Atlas account (or local MongoDB)
+- Cloudinary account
+- (Optional) Weather API — currently uses keyless Open-Meteo
+
+### Backend
+```bash
+cd disaster-management-backend
+npm install
+```
+Create a `.env` file:
+```
+PORT=5000
+MONGODB_URI=<your-mongodb-atlas-uri>
+JWT_SECRET=<your-secret>
+CLOUDINARY_CLOUD_NAME=<...>
+CLOUDINARY_API_KEY=<...>
+CLOUDINARY_API_SECRET=<...>
+ML_SERVICE_URL=http://localhost:5001
+```
+```bash
+npm run dev   # or: npm start
+```
+
+### ML Service (Flask)
+```bash
+cd ml-service
+pip install -r requirements.txt
+python app.py     # runs on port 5001
+```
+
+### Frontend
+```bash
+cd frontend
+npm install
+```
+Create a `.env` file:
+```
+VITE_API_URL=http://localhost:5000
+```
+```bash
+npm run dev
+```
+
+---
+
+## Deployment
+
+| Layer | Platform |
+|---|---|
+| Frontend | Vercel |
+| Backend (Node) | Render |
+| ML Service (Flask) | Render |
+| Database | MongoDB Atlas |
+| Image Storage | Cloudinary |
+
+**Note:** Free-tier hosting (Render) spins down on inactivity, which can add 30–50s cold-start latency on the first request after idling. All ML service calls include timeout + graceful fallback handling so the app degrades gracefully rather than failing outright if a prediction service is slow to wake.
+
+---
+
+## Known Limitations & Future Improvements
+
+- **Automatic nearest-team assignment** — currently manual selection from an available-teams dropdown; could use existing geospatial queries to auto-suggest by proximity and capability match
+- **Push notifications for offline users** — currently relies on an open Socket.io connection; SMS/push fallback would reach users without the app open
+- **Role verification for sensitive accounts** — authority/rescuer/NGO registration is currently self-service; a production version would require identity verification and admin approval before granting these roles
+- **Multilingual support** — currently English/Hindi only
+- **Offline-first mobile capability** — SOS reporting currently requires an active connection
+- **ML retraining pipeline** — models are trained on a fixed dataset; a production system would need a continuous retraining pipeline on verified real incident data
+- **Rescuer field app** — a lightweight, mobile-optimized view for field teams to update their own status/location
+- **Analytics dashboard** — historical incident and consumption trends for longer-term disaster preparedness planning
+
+---
+
+## Team
+
+Built as part of Smart India Hackathon 2026, Team ResQ Tech.
