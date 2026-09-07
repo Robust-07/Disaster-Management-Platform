@@ -34,7 +34,7 @@ ResQ addresses this by combining real-time coordination with predictive machine 
 ## 🛠️ Tech Stack
 
 ### Frontend
-- **React.js** (Vite)
+- **React.js** (Vite)![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
 - **React Router** — navigation, protected & role-based routes
 - **Axios** — API calls with a centralized instance + JWT auto-attach interceptor
 - **Socket.io-client** — real-time bidirectional updates
@@ -42,7 +42,7 @@ ResQ addresses this by combining real-time coordination with predictive machine 
 - **Leaflet** — live risk map with location markers
 
 ### Backend
-- **Node.js + Express.js** — REST API layer
+- **Node.js + Express.js** ![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=node.js&logoColor=white) — REST API layer
 - **MongoDB + Mongoose** — data persistence
   - Collections: `User`, `SOSReport`, `RescueTeam`, `Resource`, `ResourceRequest`, `RiskZone`, `Shelter`
   - Geospatial `2dsphere` indexes + `$near` queries for proximity-based matching
