@@ -1,12 +1,12 @@
-# ResQTech — Integrated Intelligent Disaster Management & Response Platform
+# 🌐 ResQTech — Integrated Intelligent Disaster Management & Response Platform
 
 **Smart India Hackathon 2026 — Team: ResQTech**
 
-ResQ is a coordinated disaster response platform that connects **citizens**, **authorities**, **rescue teams**, **volunteers** and **NGOs** on a single system — using machine learning to triage emergencies, predict resource shortages, and assess disaster risk in real time, instead of relying on manual guesswork under pressure.
+ResQTech is a coordinated disaster response platform that connects **citizens**, **authorities**, **rescue teams**, **volunteers** and **NGOs** on a single system — using machine learning to triage emergencies, predict resource shortages, and assess disaster risk in real time, instead of relying on manual guesswork under pressure.
 
 ---
 
-##🎯 Problem Statement
+## 🎯 Problem Statement
 
 During disasters, the biggest failures are rarely a lack of **help** — they're a lack of **coordination and information**:
 
@@ -31,7 +31,7 @@ ResQ addresses this by combining real-time coordination with predictive machine 
 
 ---
 
-##🛠️ Tech Stack
+## 🛠️ Tech Stack
 
 ### Frontend
 - **React.js** (Vite)
@@ -76,7 +76,7 @@ A 3-tier architecture: the API layer owns business logic, auth, and data; the ML
 
 ---
 
-##✨ Core Features
+## ✨ Core Features
 
 ### 1. Citizen SOS Reporting
 - Structured form capturing 8 triage inputs (people trapped, injuries, critical injuries, children/elderly present, water level, building damage, hours trapped, communication availability)
@@ -111,7 +111,7 @@ A 3-tier architecture: the API layer owns business logic, auth, and data; the ML
 
 ---
 
-##📂 Project Structure (Backend)
+## 📂 Project Structure (Backend)
 
 ```
 disaster-management-backend/
