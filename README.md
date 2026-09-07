@@ -33,21 +33,19 @@ ResQ addresses this by combining real-time coordination with predictive machine 
 
 ## 🛠️ Tech Stack
 
-### Frontend
-- **React.js** (Vite)![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+### Frontend ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+- **React.js (Vite)**
 - **React Router** — navigation, protected & role-based routes
 - **Axios** — API calls with a centralized instance + JWT auto-attach interceptor
 - **Socket.io-client** — real-time bidirectional updates
 - **react-hot-toast** — notifications
 - **Leaflet** — live risk map with location markers
 
-### Backend
-- **Node.js + Express.js** ![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=node.js&logoColor=white) — REST API layer
+### Backend  ![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=node.js&logoColor=white)
+- **Node.js + Express.js** — REST API layer
 - **MongoDB + Mongoose** — data persistence
-  - Collections: `User`, `SOSReport`, `RescueTeam`, `Resource`, `ResourceRequest`, `RiskZone`, `Shelter`
-  - Geospatial `2dsphere` indexes + `$near` queries for proximity-based matching
 - **Socket.io** (server) — real-time push events: new SOS, status updates, team assignment, resource allocation
-- **JWT authentication** with role-based authorization middleware (`protect`, `authorize`)
+- **JWT authentication** with role-based authorization middleware
 - **Cloudinary** — SOS evidence photo upload/storage
 - **Helmet, Morgan, CORS** — security headers, request logging, cross-origin handling
 
@@ -128,7 +126,7 @@ disaster-management-backend/
 
 ---
 
-## Setup & Installation
+## 📦 Setup & Installation
 
 ### Prerequisites
 - Node.js ≥ 18
@@ -178,7 +176,7 @@ npm run dev
 
 ---
 
-## Deployment
+## 🚀 Deployment
 
 | Layer | Platform |
 |---|---|
@@ -192,16 +190,7 @@ npm run dev
 
 ---
 
-## Known Limitations & Future Improvements
 
-- **Automatic nearest-team assignment** — currently manual selection from an available-teams dropdown; could use existing geospatial queries to auto-suggest by proximity and capability match
-- **Push notifications for offline users** — currently relies on an open Socket.io connection; SMS/push fallback would reach users without the app open
-- **Role verification for sensitive accounts** — authority/rescuer/NGO registration is currently self-service; a production version would require identity verification and admin approval before granting these roles
-- **Multilingual support** — currently English/Hindi only
-- **Offline-first mobile capability** — SOS reporting currently requires an active connection
-- **ML retraining pipeline** — models are trained on a fixed dataset; a production system would need a continuous retraining pipeline on verified real incident data
-- **Rescuer field app** — a lightweight, mobile-optimized view for field teams to update their own status/location
-- **Analytics dashboard** — historical incident and consumption trends for longer-term disaster preparedness planning
 
 ---
 
