@@ -1,6 +1,6 @@
-# ResQ — Integrated Disaster Management & Response Platform
+# ResQTech — Integrated Intelligent Disaster Management & Response Platform
 
-**Smart India Hackathon 2026 — Team: ResQ Tech**
+**Smart India Hackathon 2026 — Team: ResQTech**
 
 ResQ is a coordinated disaster response platform that connects **citizens**, **authorities**, **rescue teams**, **volunteers** and **NGOs** on a single system — using machine learning to triage emergencies, predict resource shortages, and assess disaster risk in real time, instead of relying on manual guesswork under pressure.
 
