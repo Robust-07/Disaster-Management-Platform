@@ -743,7 +743,9 @@ def predict_habitation():
             "shelter_capacity",
             "available_water",
             "food_stock",
-            "medical_capacity"
+            "medical_capacity",
+            "latitude",
+            "longitude"
 
         ]
 
@@ -796,7 +798,11 @@ def predict_habitation():
 
             float(data["road_access"]),
 
-            float(data["hospital_distance"])
+            float(data["hospital_distance"]),
+
+            float(data["latitude"]),
+
+            float(data["longitude"])
 
         ]]
 
@@ -888,71 +894,44 @@ def predict_habitation():
 
 
         # =================================================
-        # 4. CARRYING CAPACITY
+        # 4. CARRYING CAPACITY  (direct formula — no ML model)
+        # capacity_status is a deterministic rule of resource
+        # inputs, so it is computed directly rather than via
+        # a classifier that would only re-learn the same rule.
         # =================================================
 
-        capacity_features = [[
+        population        = float(data["population"])
+        shelter_capacity  = float(data["shelter_capacity"])
+        available_water   = float(data["available_water"])
+        food_stock        = float(data["food_stock"])
+        medical_capacity  = float(data["medical_capacity"])
 
-            float(data["population"]),
-
-            float(data["shelter_capacity"]),
-
-            float(data["available_water"]),
-
-            float(data["food_stock"]),
-
-            float(data["medical_capacity"]),
-
-            float(data["road_access"])
-
-        ]]
-
-
-        capacity_prediction = (
-            capacity_model
-            .predict(capacity_features)[0]
-        )
-
-
-        capacity_probabilities = (
-            capacity_model
-            .predict_proba(capacity_features)[0]
-        )
-
-
-        capacity_probability = max(
-            capacity_probabilities
-        )
-
-
-        # =================================================
-        # 5. CAPACITY RATIO
-        # =================================================
-
-        population = float(data["population"])
-        shelter_capacity = float(data["shelter_capacity"])
-        available_water = float(data["available_water"])
-        food_stock = float(data["food_stock"])
-        medical_capacity = float(data["medical_capacity"])
-
-        # Calculate capacity supported by each resource
-        water_capacity = available_water / 5
-        food_capacity = food_stock / 2
+        # Capacity supported by each resource type
+        water_capacity              = available_water / 5
+        food_capacity               = food_stock / 2
         medical_population_capacity = medical_capacity * 10
 
-        # Calculate overall safe capacity
+        # Overall safe capacity (weighted combination)
         safe_capacity = (
-                0.40 * shelter_capacity
-                + 0.25 * water_capacity
-                + 0.20 * food_capacity
-                + 0.15 * medical_population_capacity
+            0.40 * shelter_capacity
+            + 0.25 * water_capacity
+            + 0.20 * food_capacity
+            + 0.15 * medical_population_capacity
         )
 
-        # Minimum safe capacity
+        # Minimum floor
         safe_capacity = max(safe_capacity, 100)
 
-        # Population compared with safe capacity
+        # How loaded is the village relative to its capacity?
         capacity_ratio = population / safe_capacity
+
+        # Determine status directly from ratio
+        if capacity_ratio <= 0.8:
+            capacity_prediction = "SAFE"
+        elif capacity_ratio <= 1.0:
+            capacity_prediction = "STRESSED"
+        else:
+            capacity_prediction = "OVER_CAPACITY"
 
 
         # =================================================
@@ -997,7 +976,11 @@ def predict_habitation():
 
             float(data["shelter_capacity"]),
 
-            capacity_ratio
+            capacity_ratio,
+
+            float(data["latitude"]),
+
+            float(data["longitude"])
 
         ]]
 
@@ -1084,10 +1067,6 @@ def predict_habitation():
             "capacityRatio": round(
                 capacity_ratio,
                 2
-            ),
-            "probability": round(
-                float(capacity_probability),
-                4
             )
         },
 
