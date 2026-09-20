@@ -1,1258 +1,1149 @@
-import { useEffect } from "react";
-
+import { useEffect, useMemo, useState } from "react";
 import {
     MapContainer,
     TileLayer,
     Marker,
     Popup,
     Circle,
-    useMap
+    useMap,
 } from "react-leaflet";
 
-import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 
-// ======================================================
-// FIX LEAFLET DEFAULT ICONS
-// ======================================================
+import "./Map.css";
 
-delete L.Icon.Default.prototype._getIconUrl;
+/* =========================================================
+   CURRENT LOCATION ICON
+   ========================================================= */
 
-L.Icon.Default.mergeOptions({
-    iconRetinaUrl:
-        "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
-
-    iconUrl:
-        "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
-
-    shadowUrl:
-        "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png"
+const currentLocationIcon = L.divIcon({
+    className: "current-location-icon-wrapper",
+    html: `
+        <div class="current-location-icon">
+            <div class="current-location-pulse"></div>
+            <div class="current-location-dot"></div>
+        </div>
+    `,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+    popupAnchor: [0, -12],
 });
 
-// ======================================================
-// CUSTOM MARKER ICONS
-// ======================================================
 
-<<<<<<< Updated upstream
-// =====================================================
-// UPDATE MAP LOCATION
-// =====================================================
-=======
-const createIcon = (emoji, backgroundColor) => {
-    return L.divIcon({
-        className: "custom-map-icon",
+/* =========================================================
+   MAP RECENTER COMPONENT
+   ========================================================= */
 
-        html: `
-            <div
-                style="
-                    width: 34px;
-                    height: 34px;
-                    border-radius: 50%;
-                    background: ${backgroundColor};
-                    border: 3px solid white;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 17px;
-                "
-            >
-                ${emoji}
-            </div>
-        `,
-
-        iconSize: [34, 34],
-        iconAnchor: [17, 17],
-        popupAnchor: [0, -17]
-    });
-};
-
-const userIcon = createIcon("📍", "#2563eb");
-const hospitalIcon = createIcon("🏥", "#dc2626");
-const shelterIcon = createIcon("🏠", "#2563eb");
-const alertIcon = createIcon("🚨", "#f97316");
-const habitationIcon = createIcon("🏘️", "#f97316");
-const relocationIcon = createIcon("🟢", "#16a34a");
-
-// ======================================================
-// GET LATITUDE / LONGITUDE
-// ======================================================
-
-function getCoordinates(item) {
-    if (!item) return null;
-
-    // Format 1:
-    // { latitude, longitude }
-
-    if (
-        typeof item.latitude === "number" &&
-        typeof item.longitude === "number"
-    ) {
-        return [item.latitude, item.longitude];
-    }
-
-    // Format 2:
-    // GeoJSON
-    // location.coordinates = [longitude, latitude]
-
-    if (
-        item.location &&
-        Array.isArray(item.location.coordinates) &&
-        item.location.coordinates.length >= 2
-    ) {
-        const longitude = Number(item.location.coordinates[0]);
-        const latitude = Number(item.location.coordinates[1]);
-
-        if (
-            Number.isFinite(latitude) &&
-            Number.isFinite(longitude)
-        ) {
-            return [latitude, longitude];
-        }
-    }
-
-    // Format 3:
-    // coordinates = [longitude, latitude]
-
-    if (
-        Array.isArray(item.coordinates) &&
-        item.coordinates.length >= 2
-    ) {
-        const longitude = Number(item.coordinates[0]);
-        const latitude = Number(item.coordinates[1]);
-
-        if (
-            Number.isFinite(latitude) &&
-            Number.isFinite(longitude)
-        ) {
-            return [latitude, longitude];
-        }
-    }
-
-    console.warn(
-        "Skipping item with invalid coordinates:",
-        item
-    );
-
-    return null;
-}
-
-// ======================================================
-// MAP LOCATION UPDATER
-// ======================================================
->>>>>>> Stashed changes
-
-function LocationUpdater({ location }) {
+function RecenterMap({ location }) {
     const map = useMap();
 
     useEffect(() => {
-<<<<<<< Updated upstream
+        if (!location) return;
 
-        if (!location) {
+        const latitude = Number(location.latitude);
+        const longitude = Number(location.longitude);
 
-=======
         if (
-            !location ||
-            typeof location.latitude !== "number" ||
-            typeof location.longitude !== "number"
+            !Number.isFinite(latitude) ||
+            !Number.isFinite(longitude)
         ) {
->>>>>>> Stashed changes
             return;
         }
 
-<<<<<<< Updated upstream
-
-        /*
-         * Move the map smoothly to the user's
-         * actual detected coordinates.
-         */
-
-=======
->>>>>>> Stashed changes
         map.flyTo(
-            [
-                location.latitude,
-                location.longitude
-            ],
-            15,
+            [latitude, longitude],
+            14,
             {
-                duration: 1.5
+                animate: true,
+                duration: 1.2,
             }
         );
     }, [location, map]);
 
     return null;
-
 }
 
-// ======================================================
-// MAP LEGEND
-// ======================================================
 
-function MapLegend() {
-    return (
-        <div
-            style={{
-                position: "absolute",
-                bottom: "20px",
-                right: "20px",
-                zIndex: 1000,
-                background: "white",
-                padding: "14px 16px",
-                borderRadius: "10px",
-                boxShadow:
-                    "0 3px 12px rgba(0,0,0,0.18)",
-                minWidth: "190px",
-                fontSize: "13px"
-            }}
-        >
-            <div
-                style={{
-                    fontWeight: "700",
-                    color: "#174775",
-                    marginBottom: "10px",
-                    fontSize: "14px"
-                }}
-            >
-                Map Legend
-            </div>
+/* =========================================================
+   MAP COMPONENT
+   ========================================================= */
 
-            <div
-                style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    marginBottom: "7px"
-                }}
-            >
-                <span
-                    style={{
-                        width: "13px",
-                        height: "13px",
-                        borderRadius: "50%",
-                        background: "#ef4444",
-                        display: "inline-block"
-                    }}
-                ></span>
-
-                Hazard / Red Zone
-            </div>
-
-            <div
-                style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    marginBottom: "7px"
-                }}
-            >
-                <span
-                    style={{
-                        width: "13px",
-                        height: "13px",
-                        borderRadius: "50%",
-                        background: "#f97316",
-                        display: "inline-block"
-                    }}
-                ></span>
-
-                Vulnerable Habitation
-            </div>
-
-            <div
-                style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    marginBottom: "7px"
-                }}
-            >
-                <span
-                    style={{
-                        width: "13px",
-                        height: "13px",
-                        borderRadius: "50%",
-                        background: "#16a34a",
-                        display: "inline-block"
-                    }}
-                ></span>
-
-                Relocation Site
-            </div>
-
-            <div
-                style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    marginBottom: "7px"
-                }}
-            >
-                <span
-                    style={{
-                        width: "13px",
-                        height: "13px",
-                        borderRadius: "50%",
-                        background: "#2563eb",
-                        display: "inline-block"
-                    }}
-                ></span>
-
-                Hospitals / Shelters
-            </div>
-
-            <div
-                style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px"
-                }}
-            >
-                <span
-                    style={{
-                        width: "13px",
-                        height: "13px",
-                        borderRadius: "50%",
-                        background: "#f97316",
-                        display: "inline-block"
-                    }}
-                ></span>
-
-                Disaster Alert
-            </div>
-        </div>
-    );
-}
-
-// ======================================================
-// MAIN MAP COMPONENT
-// ======================================================
-
-function Map({
-    location,
-    alerts = [],
+export default function Map({
+    riskZones = [],
+    sosRequests = [],
+    rescueTeams = [],
     hospitals = [],
     shelters = [],
-
-    // SIH 191 DATA
-    hazardZones = [],
-    vulnerableHabitations = [],
-    relocationSites = []
+    resources = [],
 }) {
-<<<<<<< Updated upstream
 
+    /* -----------------------------------------------------
+       USER LOCATION
+       ----------------------------------------------------- */
+
+    const [userLocation, setUserLocation] = useState(null);
+
+    const [locationStatus, setLocationStatus] = useState(
+        "requesting"
+    );
+
+    const [locationError, setLocationError] = useState("");
+
+    const [locationAccuracy, setLocationAccuracy] = useState(null);
+
+
+    /* =====================================================
+       GET ACTUAL USER LOCATION
+       ===================================================== */
+
+    useEffect(() => {
+
+        if (!navigator.geolocation) {
+
+            setLocationStatus("error");
+
+            setLocationError(
+                "Geolocation is not supported by this browser."
+            );
+
+            return;
+        }
+
+
+        setLocationStatus("requesting");
+
+
+        const watchId = navigator.geolocation.watchPosition(
+
+            (position) => {
+
+                const {
+                    latitude,
+                    longitude,
+                    accuracy,
+                } = position.coords;
+
+
+                const actualLocation = {
+                    latitude,
+                    longitude,
+                };
+
+
+                console.log(
+                    "Actual user location:",
+                    actualLocation
+                );
+
+
+                setUserLocation(actualLocation);
+
+                setLocationAccuracy(accuracy);
+
+                setLocationStatus("success");
+
+                setLocationError("");
+            },
+
+
+            (error) => {
+
+                console.error(
+                    "Geolocation error:",
+                    error
+                );
+
+
+                setLocationStatus("error");
+
+
+                switch (error.code) {
+
+                    case error.PERMISSION_DENIED:
+
+                        setLocationError(
+                            "Location permission was denied. Please allow location access for this website."
+                        );
+
+                        break;
+
+
+                    case error.POSITION_UNAVAILABLE:
+
+                        setLocationError(
+                            "Your current location is unavailable."
+                        );
+
+                        break;
+
+
+                    case error.TIMEOUT:
+
+                        setLocationError(
+                            "Location request timed out. Trying again..."
+                        );
+
+                        break;
+
+
+                    default:
+
+                        setLocationError(
+                            "Unable to determine your current location."
+                        );
+                }
+            },
+
+
+            {
+                enableHighAccuracy: true,
+                maximumAge: 5000,
+                timeout: 20000,
+            }
+
+        );
+
+
+        /* -------------------------------------------------
+           CLEANUP
+           ------------------------------------------------- */
+
+        return () => {
+
+            navigator.geolocation.clearWatch(
+                watchId
+            );
+
+        };
+
+    }, []);
+
+
+    /* =====================================================
+       MAP CENTER
+       ===================================================== */
 
     /*
-     * Temporary map center.
-     *
-     * This is NOT treated as the user's location.
-     *
-     * The map will automatically move to the
-     * actual location once the browser provides it.
-     */
-=======
-    // Default location
-    // Prayagraj / Allahabad
->>>>>>> Stashed changes
+       This is ONLY the initial map position.
 
-    const defaultLocation = [
-        25.4358,
-        81.8463
-    ];
+       It is NOT treated as the user's location.
 
-    // Determine map center
+       As soon as GPS is available, RecenterMap moves
+       the map to the actual user location.
+    */
 
-<<<<<<< Updated upstream
-    const center = location
+    const initialCenter = useMemo(
+        () => [20.5937, 78.9629],
+        []
+    );
 
-        ? [
 
-            location.latitude,
+    /* =====================================================
+       VALIDATE BACKEND DATA
+       ===================================================== */
 
-            location.longitude
+    const validRiskZones = Array.isArray(riskZones)
+        ? riskZones
+        : [];
 
-        ]
+    const validSOSRequests = Array.isArray(sosRequests)
+        ? sosRequests
+        : [];
 
-        : defaultLocation;
-=======
-    const center =
-        location &&
-        typeof location.latitude === "number" &&
-        typeof location.longitude === "number"
-            ? [
-                location.latitude,
-                location.longitude
-            ]
-            : defaultLocation;
->>>>>>> Stashed changes
+    const validRescueTeams = Array.isArray(rescueTeams)
+        ? rescueTeams
+        : [];
+
+    const validHospitals = Array.isArray(hospitals)
+        ? hospitals
+        : [];
+
+    const validShelters = Array.isArray(shelters)
+        ? shelters
+        : [];
+
+    const validResources = Array.isArray(resources)
+        ? resources
+        : [];
+
+
+    /* =====================================================
+       HELPER — SAFE COORDINATES
+       ===================================================== */
+
+    const getCoordinates = (item) => {
+
+        if (!item) return null;
+
+
+        /*
+           Supports multiple backend structures.
+
+           Example 1:
+           {
+               latitude: 25.4358,
+               longitude: 81.8463
+           }
+
+           Example 2:
+           {
+               lat: 25.4358,
+               lng: 81.8463
+           }
+
+           Example 3:
+           {
+               location: {
+                   coordinates: [81.8463, 25.4358]
+               }
+           }
+
+           Example 4:
+           {
+               location: {
+                   latitude: 25.4358,
+                   longitude: 81.8463
+               }
+           }
+        */
+
+
+        if (
+            Number.isFinite(Number(item.latitude)) &&
+            Number.isFinite(Number(item.longitude))
+        ) {
+
+            return [
+                Number(item.latitude),
+                Number(item.longitude),
+            ];
+        }
+
+
+        if (
+            Number.isFinite(Number(item.lat)) &&
+            Number.isFinite(Number(item.lng))
+        ) {
+
+            return [
+                Number(item.lat),
+                Number(item.lng),
+            ];
+        }
+
+
+        if (
+            item.location &&
+            Array.isArray(item.location.coordinates) &&
+            item.location.coordinates.length >= 2
+        ) {
+
+            const longitude =
+                Number(item.location.coordinates[0]);
+
+            const latitude =
+                Number(item.location.coordinates[1]);
+
+
+            if (
+                Number.isFinite(latitude) &&
+                Number.isFinite(longitude)
+            ) {
+
+                return [
+                    latitude,
+                    longitude,
+                ];
+            }
+        }
+
+
+        if (
+            item.location &&
+            Number.isFinite(
+                Number(item.location.latitude)
+            ) &&
+            Number.isFinite(
+                Number(item.location.longitude)
+            )
+        ) {
+
+            return [
+                Number(item.location.latitude),
+                Number(item.location.longitude),
+            ];
+        }
+
+
+        return null;
+    };
+
+
+    /* =====================================================
+       RISK ZONE COLOR
+       ===================================================== */
+
+    const getRiskColor = (risk) => {
+
+        const value = String(
+            risk || ""
+        ).toLowerCase();
+
+
+        if (
+            value.includes("high") ||
+            value.includes("critical") ||
+            value.includes("severe")
+        ) {
+
+            return "#dc2626";
+        }
+
+
+        if (
+            value.includes("medium") ||
+            value.includes("moderate")
+        ) {
+
+            return "#f59e0b";
+        }
+
+
+        return "#16a34a";
+    };
+
+
+    /* =====================================================
+       RENDER
+       ===================================================== */
 
     return (
-        <div
-            className="map-wrapper"
-            style={{
-                position: "relative",
-                width: "100%",
-                height: "100%"
-            }}
-        >
-            <MapContainer
-                center={center}
-                zoom={15}
-                className="leaflet-map"
-                style={{
-                    width: "100%",
-                    height: "100%"
-                }}
-            >
 
-<<<<<<< Updated upstream
-
-                {/* =====================================
-                    OPENSTREETMAP
-                ===================================== */}
-=======
-                {/* ==================================================
-                    OPEN STREET MAP
-                ================================================== */}
->>>>>>> Stashed changes
-
-                <TileLayer
-                    attribution="&copy; OpenStreetMap contributors"
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-
-<<<<<<< Updated upstream
-
-                {/* =====================================
-                    UPDATE MAP WHEN LOCATION CHANGES
-                ===================================== */}
-=======
-                {/* ==================================================
-                    UPDATE MAP WHEN USER LOCATION CHANGES
-                ================================================== */}
->>>>>>> Stashed changes
-
-                <LocationUpdater
-                    location={location}
-                />
-
-                {/* ==================================================
-                    USER LOCATION
-                ================================================== */}
-
-                {location && (
-                    <Marker
-                        position={[
-                            location.latitude,
-                            location.longitude
-                        ]}
-                        icon={userIcon}
-                    >
-                        <Popup>
-                            <strong>
-
-                                📍 You are here
-
-                            </strong>
+        <div className="terrashield-map-container">
 
 
-                            <br />
+            {/* =================================================
+               MAP STATUS BAR
+               ================================================= */}
 
-<<<<<<< Updated upstream
+            <div className="map-status-bar">
 
-                            Latitude:
+                <div className="map-status-left">
 
-                            {" "}
+                    <span
+                        className={`map-status-dot ${
+                            locationStatus
+                        }`}
+                    ></span>
 
-=======
-                            Latitude:{" "}
->>>>>>> Stashed changes
-                            {location.latitude.toFixed(6)}
+
+                    <span>
+
+                        {locationStatus === "requesting" &&
+                            "Getting your location..."}
 
 
-                            <br />
+                        {locationStatus === "success" &&
+                            "Live location active"}
 
-<<<<<<< Updated upstream
 
-                            Longitude:
+                        {locationStatus === "error" &&
+                            "Location unavailable"}
 
-                            {" "}
+                    </span>
 
-=======
-                            Longitude:{" "}
->>>>>>> Stashed changes
-                            {location.longitude.toFixed(6)}
-                        </Popup>
-                    </Marker>
+                </div>
+
+
+                {locationStatus === "success" &&
+                    locationAccuracy && (
+
+                    <span className="map-accuracy">
+
+                        Accuracy:
+                        {" "}
+                        {Math.round(
+                            locationAccuracy
+                        )}
+                        m
+
+                    </span>
+
                 )}
 
-                {/* ==================================================
-                    SIH 191
-                    HAZARD / RED ZONES
-                ================================================== */}
+            </div>
 
-                {hazardZones.map((zone, index) => {
 
-                    // Support different possible backend formats
+            {/* =================================================
+               LOCATION ERROR
+               ================================================= */}
 
-<<<<<<< Updated upstream
-                    (hospital, index) => (
+            {locationStatus === "error" && (
+
+                <div className="map-location-error">
+
+                    <div className="map-error-title">
+
+                        Location access required
+
+                    </div>
+
+
+                    <div className="map-error-message">
+
+                        {locationError}
+
+                    </div>
+
+                </div>
+
+            )}
+
+
+            {/* =================================================
+               LEAFLET MAP
+               ================================================= */}
+
+            <MapContainer
+
+                center={initialCenter}
+
+                zoom={5}
+
+                minZoom={3}
+
+                maxZoom={19}
+
+                scrollWheelZoom={true}
+
+                className="terrashield-map"
+
+            >
+
+                {/* =============================================
+                   MAP TILES
+                   ============================================= */}
+
+                <TileLayer
+
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+
+                />
+
+
+                {/* =============================================
+                   RECENTER TO ACTUAL USER LOCATION
+                   ============================================= */}
+
+                <RecenterMap
+                    location={userLocation}
+                />
+
+
+                {/* =============================================
+                   ACTUAL USER LOCATION
+                   ============================================= */}
+
+                {userLocation && (
+
+                    <>
 
                         <Marker
 
-                            key={
-
-                                hospital.id ||
-
-                                index
-
-                            }
-
                             position={[
-
-                                hospital.latitude,
-
-                                hospital.longitude
-
+                                userLocation.latitude,
+                                userLocation.longitude,
                             ]}
 
+                            icon={currentLocationIcon}
+
                         >
 
                             <Popup>
 
-                                🏥
+                                <div className="location-popup">
 
-                                {" "}
+                                    <strong>
+                                        Your Current Location
+                                    </strong>
 
-                                <strong>
+                                    <span>
+                                        Latitude:
+                                        {" "}
+                                        {userLocation.latitude.toFixed(
+                                            6
+                                        )}
+                                    </span>
 
-                                    {hospital.name}
+                                    <span>
+                                        Longitude:
+                                        {" "}
+                                        {userLocation.longitude.toFixed(
+                                            6
+                                        )}
+                                    </span>
 
-                                </strong>
-
-
-                                {hospital.address && (
-=======
-                    let centerCoordinates = null;
-
-                    if (
-                        zone.center &&
-                        typeof zone.center.latitude === "number" &&
-                        typeof zone.center.longitude === "number"
-                    ) {
-                        centerCoordinates = [
-                            zone.center.latitude,
-                            zone.center.longitude
-                        ];
-                    }
-                    else {
-                        centerCoordinates =
-                            getCoordinates(zone);
-                    }
-
-                    if (!centerCoordinates) {
-                        return null;
-                    }
-
-                    // Risk level
-
-                    const riskLevel =
-                        String(
-                            zone.riskLevel ||
-                            zone.risk ||
-                            "high"
-                        ).toLowerCase();
-
-                    let zoneColor = "#dc2626";
-
-                    if (riskLevel === "critical") {
-                        zoneColor = "#991b1b";
-                    }
-                    else if (riskLevel === "high") {
-                        zoneColor = "#dc2626";
-                    }
-                    else if (riskLevel === "moderate") {
-                        zoneColor = "#f59e0b";
-                    }
-
-                    return (
-                        <Circle
-                            key={
-                                zone.id ||
-                                zone._id ||
-                                index
-                            }
-                            center={centerCoordinates}
-                            radius={
-                                Number(zone.radius) ||
-                                1000
-                            }
-                            pathOptions={{
-                                color: zoneColor,
-                                fillColor: zoneColor,
-                                fillOpacity: 0.25,
-                                weight: 2
-                            }}
-                        >
-                            <Popup>
-
-                                <strong>
-                                    🔴 Hazard / Red Zone
-                                </strong>
-
-                                <br />
-
-                                <strong>
-                                    {zone.name ||
-                                        "High-Risk Zone"}
-                                </strong>
-
-                                {zone.hazardType && (
-                                    <>
-                                        <br />
-                                        Hazard Type:{" "}
-                                        {zone.hazardType}
-                                    </>
-                                )}
-
-                                {zone.hazards &&
-                                    Array.isArray(
-                                        zone.hazards
-                                    ) && (
-                                        <>
-                                            <br />
-                                            Hazards:{" "}
-                                            {zone.hazards.join(
-                                                ", "
-                                            )}
-                                        </>
-                                    )}
-
-                                <br />
-
-                                Risk Level:{" "}
-                                <strong>
-                                    {zone.riskLevel ||
-                                        zone.risk ||
-                                        "High"}
-                                </strong>
-
-                                {zone.riskScore !== undefined && (
-                                    <>
-                                        <br />
-                                        Risk Score:{" "}
-                                        {zone.riskScore}/100
-                                    </>
-                                )}
-
-                                {zone.population !== undefined && (
-                                    <>
-                                        <br />
-                                        Population:{" "}
-                                        {zone.population}
-                                    </>
-                                )}
-
-                                {zone.reason && (
-                                    <>
-                                        <br />
-                                        Reason:{" "}
-                                        {zone.reason}
-                                    </>
-                                )}
-
-                                <br />
-
-                                <strong>
-                                    ⚠️ Permanent habitation
-                                    not recommended
-                                </strong>
-
-                            </Popup>
-                        </Circle>
-                    );
-                })}
-
-                {/* ==================================================
-                    SIH 191
-                    VULNERABLE HABITATIONS
-                ================================================== */}
-
-                {vulnerableHabitations.map(
-                    (habitation, index) => {
-
-                        const coords =
-                            getCoordinates(
-                                habitation
-                            );
->>>>>>> Stashed changes
-
-                                    <>
-
-<<<<<<< Updated upstream
-                                        <br />
-
-                                        {hospital.address}
-
-                                    </>
-
-                                )}
+                                </div>
 
                             </Popup>
 
                         </Marker>
 
-                    )
 
-=======
-                        return (
-                            <Marker
-                                key={
-                                    habitation.id ||
-                                    habitation._id ||
-                                    index
+                        {/* -------------------------------------
+                           ACCURACY CIRCLE
+                           ------------------------------------- */}
+
+                        {locationAccuracy && (
+
+                            <Circle
+
+                                center={[
+                                    userLocation.latitude,
+                                    userLocation.longitude,
+                                ]}
+
+                                radius={
+                                    locationAccuracy
                                 }
-                                position={coords}
-                                icon={habitationIcon}
-                            >
-                                <Popup>
 
-                                    <strong>
-                                        🏘️{" "}
-                                        {habitation.name ||
-                                            habitation.village ||
-                                            "Vulnerable Habitation"}
-                                    </strong>
+                                pathOptions={{
+                                    color: "#2563eb",
+                                    fillColor: "#2563eb",
+                                    fillOpacity: 0.08,
+                                    weight: 1,
+                                }}
 
-                                    {habitation.district && (
-                                        <>
-                                            <br />
-                                            District:{" "}
-                                            {habitation.district}
-                                        </>
-                                    )}
+                            />
 
-                                    {habitation.population !==
-                                        undefined && (
-                                        <>
-                                            <br />
-                                            Population:{" "}
-                                            {
-                                                habitation.population
-                                            }
-                                        </>
-                                    )}
+                        )}
 
-                                    {habitation.vulnerablePopulation !==
-                                        undefined && (
-                                        <>
-                                            <br />
-                                            Vulnerable Population:{" "}
-                                            {
-                                                habitation.vulnerablePopulation
-                                            }
-                                        </>
-                                    )}
+                    </>
 
-                                    {habitation.riskLevel && (
-                                        <>
-                                            <br />
-                                            Risk Level:{" "}
-                                            <strong>
-                                                {
-                                                    habitation.riskLevel
-                                                }
-                                            </strong>
-                                        </>
-                                    )}
-
-                                    {habitation.riskScore !==
-                                        undefined && (
-                                        <>
-                                            <br />
-                                            Risk Score:{" "}
-                                            {
-                                                habitation.riskScore
-                                            }
-                                            /100
-                                        </>
-                                    )}
-
-                                    {habitation.relocationPriority && (
-                                        <>
-                                            <br />
-                                            Relocation Priority:{" "}
-                                            <strong>
-                                                {
-                                                    habitation.relocationPriority
-                                                }
-                                            </strong>
-                                        </>
-                                    )}
-
-                                    {habitation.hazardType && (
-                                        <>
-                                            <br />
-                                            Main Hazard:{" "}
-                                            {
-                                                habitation.hazardType
-                                            }
-                                        </>
-                                    )}
-
-                                </Popup>
-                            </Marker>
-                        );
-                    }
                 )}
 
-                {/* ==================================================
-                    SIH 191
-                    POTENTIAL RELOCATION SITES
-                ================================================== */}
 
-                {relocationSites.map(
-                    (site, index) => {
+                {/* =================================================
+                   BACKEND RISK ZONES
+                   ================================================= */}
 
-                        const coords =
-                            getCoordinates(site);
+                {validRiskZones.map(
+                    (zone, index) => {
 
-                        if (!coords) {
+                        const coordinates =
+                            getCoordinates(zone);
+
+
+                        if (!coordinates) {
                             return null;
                         }
 
+
+                        const risk =
+                            zone.riskLevel ||
+                            zone.risk ||
+                            zone.level;
+
+
                         return (
-                            <Marker
+
+                            <Circle
+
                                 key={
-                                    site.id ||
-                                    site._id ||
-                                    index
+                                    zone._id ||
+                                    zone.id ||
+                                    `risk-${index}`
                                 }
-                                position={coords}
-                                icon={relocationIcon}
+
+                                center={coordinates}
+
+                                radius={
+                                    Number(
+                                        zone.radius
+                                    ) || 500
+                                }
+
+                                pathOptions={{
+                                    color:
+                                        getRiskColor(
+                                            risk
+                                        ),
+
+                                    fillColor:
+                                        getRiskColor(
+                                            risk
+                                        ),
+
+                                    fillOpacity: 0.2,
+
+                                    weight: 2,
+                                }}
+
                             >
+
                                 <Popup>
 
-                                    <strong>
-                                        🟢{" "}
-                                        {site.name ||
-                                            "Potential Relocation Site"}
-                                    </strong>
+                                    <div className="map-popup">
 
-                                    {site.locationName && (
-                                        <>
-                                            <br />
-                                            Location:{" "}
-                                            {
-                                                site.locationName
-                                            }
-                                        </>
-                                    )}
+                                        <strong>
 
-                                    {site.safetyScore !==
-                                        undefined && (
-                                        <>
-                                            <br />
-                                            Safety Score:{" "}
-                                            {
-                                                site.safetyScore
-                                            }
-                                            /100
-                                        </>
-                                    )}
+                                            {zone.name ||
+                                                "Risk Zone"}
 
-                                    {site.capacity !==
-                                        undefined && (
-                                        <>
-                                            <br />
-                                            Total Capacity:{" "}
-                                            {site.capacity}
-                                        </>
-                                    )}
+                                        </strong>
 
-                                    {site.availableCapacity !==
-                                        undefined && (
-                                        <>
-                                            <br />
-                                            Available Capacity:{" "}
-                                            {
-                                                site.availableCapacity
-                                            }
-                                        </>
-                                    )}
 
-                                    {site.occupancy !==
-                                        undefined && (
-                                        <>
-                                            <br />
-                                            Current Occupancy:{" "}
-                                            {site.occupancy}
-                                        </>
-                                    )}
+                                        <span>
 
-                                    {site.status && (
-                                        <>
-                                            <br />
-                                            Status:{" "}
-                                            {site.status}
-                                        </>
-                                    )}
+                                            Risk:
+                                            {" "}
+                                            {risk ||
+                                                "Unknown"}
 
-                                    {site.distance !==
-                                        undefined && (
-                                        <>
-                                            <br />
-                                            Distance:{" "}
-                                            {site.distance} km
-                                        </>
-                                    )}
+                                        </span>
 
-                                    {site.facilities &&
-                                        Array.isArray(
-                                            site.facilities
-                                        ) && (
-                                        <>
-                                            <br />
-                                            Facilities:{" "}
-                                            {
-                                                site.facilities.join(
-                                                    ", "
-                                                )
-                                            }
-                                        </>
-                                    )}
+
+                                        {zone.description && (
+
+                                            <span>
+
+                                                {
+                                                    zone.description
+                                                }
+
+                                            </span>
+
+                                        )}
+
+                                    </div>
 
                                 </Popup>
-                            </Marker>
+
+                            </Circle>
+
                         );
+
                     }
                 )}
 
-                {/* ==================================================
-                    HOSPITALS
-                ================================================== */}
 
-                {hospitals.map(
+                {/* =================================================
+                   BACKEND SOS REQUESTS
+                   ================================================= */}
+
+                {validSOSRequests.map(
+                    (request, index) => {
+
+                        const coordinates =
+                            getCoordinates(request);
+
+
+                        if (!coordinates) {
+                            return null;
+                        }
+
+
+                        return (
+
+                            <Marker
+
+                                key={
+                                    request._id ||
+                                    request.id ||
+                                    `sos-${index}`
+                                }
+
+                                position={
+                                    coordinates
+                                }
+
+                            >
+
+                                <Popup>
+
+                                    <div className="map-popup">
+
+                                        <strong>
+                                            Emergency SOS
+                                        </strong>
+
+
+                                        <span>
+
+                                            Status:
+                                            {" "}
+                                            {
+                                                request.status ||
+                                                "Pending"
+                                            }
+
+                                        </span>
+
+
+                                        {request.description && (
+
+                                            <span>
+
+                                                {
+                                                    request.description
+                                                }
+
+                                            </span>
+
+                                        )}
+
+                                    </div>
+
+                                </Popup>
+
+                            </Marker>
+
+                        );
+
+                    }
+                )}
+
+
+                {/* =================================================
+                   BACKEND RESCUE TEAMS
+                   ================================================= */}
+
+                {validRescueTeams.map(
+                    (team, index) => {
+
+                        const coordinates =
+                            getCoordinates(team);
+
+
+                        if (!coordinates) {
+                            return null;
+                        }
+
+
+                        return (
+
+                            <Marker
+
+                                key={
+                                    team._id ||
+                                    team.id ||
+                                    `team-${index}`
+                                }
+
+                                position={
+                                    coordinates
+                                }
+
+                            >
+
+                                <Popup>
+
+                                    <div className="map-popup">
+
+                                        <strong>
+
+                                            {team.name ||
+                                                "Rescue Team"}
+
+                                        </strong>
+
+
+                                        <span>
+
+                                            Status:
+                                            {" "}
+                                            {
+                                                team.status ||
+                                                "Available"
+                                            }
+
+                                        </span>
+
+                                    </div>
+
+                                </Popup>
+
+                            </Marker>
+
+                        );
+
+                    }
+                )}
+
+
+                {/* =================================================
+                   BACKEND HOSPITALS
+                   ================================================= */}
+
+                {validHospitals.map(
                     (hospital, index) => {
 
-                        const coords =
+                        const coordinates =
                             getCoordinates(
                                 hospital
                             );
 
-                        if (!coords) {
+
+                        if (!coordinates) {
                             return null;
                         }
 
+
                         return (
+
                             <Marker
+
                                 key={
-                                    hospital.id ||
                                     hospital._id ||
-                                    index
+                                    hospital.id ||
+                                    `hospital-${index}`
                                 }
-                                position={coords}
-                                icon={hospitalIcon}
+
+                                position={
+                                    coordinates
+                                }
+
                             >
+
                                 <Popup>
 
-                                    <strong>
-                                        🏥{" "}
-                                        {hospital.name ||
-                                            hospital.title ||
-                                            "Hospital"}
-                                    </strong>
+                                    <div className="map-popup">
 
-                                    {hospital.address && (
-                                        <>
-                                            <br />
-                                            {
-                                                hospital.address
-                                            }
-                                        </>
-                                    )}
+                                        <strong>
 
-                                    {hospital.availableCapacity !==
-                                        undefined && (
-                                        <>
-                                            <br />
-                                            🛏️ Available
-                                            Capacity:{" "}
-                                            {
-                                                hospital.availableCapacity
-                                            }
-                                        </>
-                                    )}
+                                            {hospital.name ||
+                                                "Hospital"}
 
-                                    {hospital.status && (
-                                        <>
-                                            <br />
-                                            Status:{" "}
-                                            {hospital.status}
-                                        </>
-                                    )}
+                                        </strong>
+
+
+                                        {hospital.address && (
+
+                                            <span>
+
+                                                {
+                                                    hospital.address
+                                                }
+
+                                            </span>
+
+                                        )}
+
+                                    </div>
 
                                 </Popup>
+
                             </Marker>
+
                         );
+
                     }
->>>>>>> Stashed changes
                 )}
 
-                {/* ==================================================
-                    SHELTERS
-                ================================================== */}
 
-                {shelters.map(
-<<<<<<< Updated upstream
+                {/* =================================================
+                   BACKEND SHELTERS
+                   ================================================= */}
 
-                    (shelter, index) => (
-
-                        <Marker
-
-                            key={
-=======
+                {validShelters.map(
                     (shelter, index) => {
 
-                        const coords =
+                        const coordinates =
                             getCoordinates(
                                 shelter
                             );
->>>>>>> Stashed changes
 
-                                shelter.id ||
 
-<<<<<<< Updated upstream
-                                index
-
-                            }
-
-                            position={[
-
-                                shelter.latitude,
-
-                                shelter.longitude
-
-                            ]}
-
-                        >
-
-                            <Popup>
-
-                                🏠
-
-                                {" "}
-
-                                <strong>
-
-                                    {shelter.name}
-
-                                </strong>
-
-                            </Popup>
-
-                        </Marker>
-
-                    )
-
-=======
-                        return (
-                            <Marker
-                                key={
-                                    shelter.id ||
-                                    shelter._id ||
-                                    index
-                                }
-                                position={coords}
-                                icon={shelterIcon}
-                            >
-                                <Popup>
-
-                                    <strong>
-                                        🏠{" "}
-                                        {shelter.name ||
-                                            shelter.title ||
-                                            "Shelter"}
-                                    </strong>
-
-                                    {shelter.address && (
-                                        <>
-                                            <br />
-                                            {
-                                                shelter.address
-                                            }
-                                        </>
-                                    )}
-
-                                    {shelter.availableCapacity !==
-                                        undefined && (
-                                        <>
-                                            <br />
-                                            👥 Available
-                                            Capacity:{" "}
-                                            {
-                                                shelter.availableCapacity
-                                            }
-                                        </>
-                                    )}
-
-                                    {shelter.status && (
-                                        <>
-                                            <br />
-                                            Status:{" "}
-                                            {shelter.status}
-                                        </>
-                                    )}
-
-                                </Popup>
-                            </Marker>
-                        );
-                    }
->>>>>>> Stashed changes
-                )}
-
-                {/* ==================================================
-                    DISASTER ALERTS
-                ================================================== */}
-
-                {alerts.map(
-<<<<<<< Updated upstream
-
-                    (alert, index) => (
-=======
-                    (alert, index) => {
->>>>>>> Stashed changes
-
-                        <Marker
-
-                            key={
-
-                                alert.id ||
-
-                                index
-
-                            }
-
-                            position={[
-
-                                alert.latitude,
-
-                                alert.longitude
-
-                            ]}
-
-                        >
-
-                            <Popup>
-
-                                🚨
-
-                                {" "}
-
-                                <strong>
-
-                                    {alert.title ||
-
-                                        alert.type ||
-
-                                        "Disaster Alert"
-
-                                    }
-
-                                </strong>
-
-<<<<<<< Updated upstream
-
-                                {alert.description && (
-
-                                    <>
-
-                                        <br />
-
-                                        {alert.description}
-
-                                    </>
-
-                                )}
-
-                            </Popup>
-
-                        </Marker>
-
-                    )
-
-=======
-                        if (!coords) {
+                        if (!coordinates) {
                             return null;
                         }
 
+
                         return (
+
                             <Marker
+
                                 key={
-                                    alert.id ||
-                                    alert._id ||
-                                    index
+                                    shelter._id ||
+                                    shelter.id ||
+                                    `shelter-${index}`
                                 }
-                                position={coords}
-                                icon={alertIcon}
+
+                                position={
+                                    coordinates
+                                }
+
                             >
+
                                 <Popup>
 
-                                    <strong>
-                                        🚨{" "}
-                                        {alert.title ||
-                                            alert.type ||
-                                            "Disaster Alert"}
-                                    </strong>
+                                    <div className="map-popup">
 
-                                    {alert.description && (
-                                        <>
-                                            <br />
-                                            {
-                                                alert.description
-                                            }
-                                        </>
-                                    )}
+                                        <strong>
 
-                                    {alert.severity && (
-                                        <>
-                                            <br />
-                                            Severity:{" "}
-                                            <strong>
+                                            {shelter.name ||
+                                                "Shelter"}
+
+                                        </strong>
+
+
+                                        {shelter.capacity && (
+
+                                            <span>
+
+                                                Capacity:
+                                                {" "}
                                                 {
-                                                    alert.severity
+                                                    shelter.capacity
                                                 }
-                                            </strong>
-                                        </>
-                                    )}
 
-                                    {alert.hazardType && (
-                                        <>
-                                            <br />
-                                            Hazard:{" "}
-                                            {
-                                                alert.hazardType
-                                            }
-                                        </>
-                                    )}
+                                            </span>
+
+                                        )}
+
+                                    </div>
 
                                 </Popup>
+
                             </Marker>
+
                         );
+
                     }
->>>>>>> Stashed changes
+                )}
+
+
+                {/* =================================================
+                   BACKEND RESOURCES
+                   ================================================= */}
+
+                {validResources.map(
+                    (resource, index) => {
+
+                        const coordinates =
+                            getCoordinates(
+                                resource
+                            );
+
+
+                        if (!coordinates) {
+                            return null;
+                        }
+
+
+                        return (
+
+                            <Marker
+
+                                key={
+                                    resource._id ||
+                                    resource.id ||
+                                    `resource-${index}`
+                                }
+
+                                position={
+                                    coordinates
+                                }
+
+                            >
+
+                                <Popup>
+
+                                    <div className="map-popup">
+
+                                        <strong>
+
+                                            {resource.name ||
+                                                "Resource"}
+
+                                        </strong>
+
+
+                                        {resource.type && (
+
+                                            <span>
+
+                                                Type:
+                                                {" "}
+                                                {
+                                                    resource.type
+                                                }
+
+                                            </span>
+
+                                        )}
+
+                                    </div>
+
+                                </Popup>
+
+                            </Marker>
+
+                        );
+
+                    }
                 )}
 
             </MapContainer>
 
-            {/* ======================================================
-                MAP LEGEND
-            ====================================================== */}
 
-            <MapLegend />
+            {/* =================================================
+               MAP LEGEND
+               ================================================= */}
+
+            <div className="map-legend">
+
+                <div className="map-legend-title">
+
+                    Map Layers
+
+                </div>
+
+
+                <div className="map-legend-items">
+
+                    <div className="map-legend-item">
+
+                        <span className="legend-dot legend-user"></span>
+
+                        Your location
+
+                    </div>
+
+
+                    <div className="map-legend-item">
+
+                        <span className="legend-dot legend-high"></span>
+
+                        High risk
+
+                    </div>
+
+
+                    <div className="map-legend-item">
+
+                        <span className="legend-dot legend-medium"></span>
+
+                        Medium risk
+
+                    </div>
+
+
+                    <div className="map-legend-item">
+
+                        <span className="legend-dot legend-low"></span>
+
+                        Low risk
+
+                    </div>
+
+                </div>
+
+            </div>
 
         </div>
     );
 }
-
-export default Map;

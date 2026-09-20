@@ -1,1309 +1,1087 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import {
+    AlertTriangle,
+    Bell,
+    ChevronRight,
+    Hospital,
+    MapPin,
+    Menu,
+    Package,
+    Radio,
+    RefreshCw,
+    ShieldAlert,
+    ShieldCheck,
+    Users,
+    XCircle,
+} from "lucide-react";
+
 import api from "../api/axios";
+import Map from "../components/Map";
+import AuthoritySidebar from "../components/AuthoritySidebar";
+import AuthorityTopbar from "../components/AuthorityTopbar";
+
 import "./AuthorityDashboard.css";
-import { io as socketIO } from "socket.io-client";
-import Navbar from "../components/Navbar";
 
 function AuthorityDashboard() {
-    const [reports, setReports] = useState([]);
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+    const [location, setLocation] = useState(null);
+    const [locationError, setLocationError] = useState("");
+    const [locationLoading, setLocationLoading] = useState(true);
+
+    const [dashboardData, setDashboardData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState("");
-    const [assigningId, setAssigningId] = useState(null);
-    const [teamIdInput, setTeamIdInput] = useState("");
-    const [actionError, setActionError] = useState("");
-    const [availableTeams, setAvailableTeams] = useState([]);
 
-    const navigate = useNavigate();
+    const [selectedAlert, setSelectedAlert] = useState(null);
+    const [search, setSearch] = useState("");
 
-    // ======================================================
-    // SIH 191 DEMONSTRATION DATA
-    // These will later come from your backend / ML service.
-    // ======================================================
+    const token = localStorage.getItem("token");
 
-    const hazardZones = [
-        {
-            id: "HZ-01",
-            name: "Flood-Prone Zone",
-            hazard: "Flood",
-            riskLevel: "Critical",
-            riskScore: 91,
-            affectedPopulation: 1840
-        },
-        {
-            id: "HZ-02",
-            name: "Landslide Risk Zone",
-            hazard: "Landslide",
-            riskLevel: "High",
-            riskScore: 82,
-            affectedPopulation: 920
-        },
-        {
-            id: "HZ-03",
-            name: "Multi-Hazard Zone",
-            hazard: "Flood + Landslide",
-            riskLevel: "High",
-            riskScore: 78,
-            affectedPopulation: 1360
+    // =========================================================
+    // GET CURRENT LOCATION
+    // =========================================================
+
+    const getCurrentLocation = () => {
+        setLocationLoading(true);
+        setLocationError("");
+
+        if (!navigator.geolocation) {
+            setLocationError(
+                "Geolocation is not supported by this browser."
+            );
+            setLocationLoading(false);
+            return;
         }
-    ];
 
-    const vulnerableHabitations = [
-        {
-            id: "VH-01",
-            name: "Habitation A",
-            population: 860,
-            riskScore: 92,
-            priority: "Immediate"
-        },
-        {
-            id: "VH-02",
-            name: "Habitation B",
-            population: 540,
-            riskScore: 84,
-            priority: "Immediate"
-        },
-        {
-            id: "VH-03",
-            name: "Habitation C",
-            population: 720,
-            riskScore: 73,
-            priority: "Short-term"
-        },
-        {
-            id: "VH-04",
-            name: "Habitation D",
-            population: 430,
-            riskScore: 61,
-            priority: "Medium-term"
-        }
-    ];
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                setLocation({
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                });
 
-    const relocationSites = [
-        {
-            id: "RS-01",
-            name: "Safe Site Alpha",
-            capacity: 1500,
-            occupied: 620,
-            safetyScore: 94,
-            status: "Available"
-        },
-        {
-            id: "RS-02",
-            name: "Safe Site Beta",
-            capacity: 1000,
-            occupied: 710,
-            safetyScore: 88,
-            status: "Available"
-        },
-        {
-            id: "RS-03",
-            name: "Safe Site Gamma",
-            capacity: 800,
-            occupied: 780,
-            safetyScore: 82,
-            status: "Near Capacity"
-        }
-    ];
+                setLocationLoading(false);
+            },
+            (error) => {
+                console.error("Location error:", error);
 
-    // ======================================================
-    // FETCH SOS REPORTS
-    // ======================================================
+                let message =
+                    "Unable to determine your current location.";
 
-    const fetchReports = async () => {
+                if (error.code === error.PERMISSION_DENIED) {
+                    message =
+                        "Location permission was denied. Please allow location access.";
+                }
+
+                if (error.code === error.POSITION_UNAVAILABLE) {
+                    message =
+                        "Your current location is unavailable.";
+                }
+
+                if (error.code === error.TIMEOUT) {
+                    message =
+                        "Location request timed out. Please try again.";
+                }
+
+                setLocationError(message);
+                setLocationLoading(false);
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 30000,
+                maximumAge: 0,
+            }
+        );
+    };
+
+    // =========================================================
+    // FETCH REAL BACKEND DATA
+    // =========================================================
+
+    const fetchDashboardData = async (latitude, longitude) => {
         try {
-            setLoading(true);
             setError("");
 
-            const response = await api.get("/api/sos");
-
-            setReports(
-                response.data.reports || []
+            const response = await api.get(
+                `/api/dashboard?lat=${latitude}&lng=${longitude}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
             );
+
+            if (!response.data) {
+                throw new Error(
+                    "Backend returned an empty dashboard response."
+                );
+            }
+
+            setDashboardData(response.data);
         } catch (err) {
             console.error(
-                "Fetch SOS reports error:",
-                err.response?.data || err.message
+                "Authority dashboard API error:",
+                err.response?.data || err
             );
 
             setError(
                 err.response?.data?.message ||
-                "Failed to load SOS reports. Are you logged in as an authority?"
-            );
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // ======================================================
-    // FETCH AVAILABLE RESCUE TEAMS
-    // ======================================================
-
-    const fetchAvailableTeams = async () => {
-        try {
-            const response =
-                await api.get("/api/rescue-teams");
-
-            const teams =
-                response.data.teams || [];
-
-            setAvailableTeams(
-                teams.filter(
-                    (team) =>
-                        team.currentStatus ===
-                        "AVAILABLE"
-                )
-            );
-        } catch (err) {
-            console.error(
-                "Fetch rescue teams error:",
-                err.response?.data ||
-                err.message
+                    err.response?.data?.error ||
+                    err.message ||
+                    "Unable to load dashboard data."
             );
         }
     };
 
-    // ======================================================
-    // ROLE GUARD
-    // ======================================================
+    // =========================================================
+    // INITIAL LOAD
+    // =========================================================
 
     useEffect(() => {
-        const user = JSON.parse(
-            localStorage.getItem("user") ||
-            "null"
-        );
-
-        if (
-            !user ||
-            (
-                user.role !== "authority" &&
-                user.role !== "rescuer"
-            )
-        ) {
-            navigate("/dashboard");
-        }
-    }, [navigate]);
-
-    // ======================================================
-    // INITIAL DATA + SOCKET
-    // ======================================================
-
-    useEffect(() => {
-        fetchReports();
-        fetchAvailableTeams();
-
-        const socket = socketIO(
-            import.meta.env.VITE_API_URL ||
-            "http://localhost:5000"
-        );
-
-        socket.on("connect", () => {
-            console.log(
-                "Authority dashboard connected:",
-                socket.id
-            );
-        });
-
-        socket.on("new-sos", (newReport) => {
-            setReports((prev) => [
-                newReport,
-                ...prev
-            ]);
-        });
-
-        socket.on(
-            "status-update",
-            ({ sosId, status }) => {
-                setReports((prev) =>
-                    prev.map((report) =>
-                        report._id === sosId
-                            ? {
-                                ...report,
-                                status
-                            }
-                            : report
-                    )
-                );
-
-                fetchAvailableTeams();
-            }
-        );
-
-        socket.on(
-            "team-assigned",
-            ({ sosId, teamId }) => {
-                setReports((prev) =>
-                    prev.map((report) =>
-                        report._id === sosId
-                            ? {
-                                ...report,
-                                assignedTeamId:
-                                    teamId
-                            }
-                            : report
-                    )
-                );
-
-                fetchAvailableTeams();
-            }
-        );
-
-        return () => {
-            socket.disconnect();
-        };
+        getCurrentLocation();
     }, []);
 
-    // ======================================================
-    // ASSIGN RESCUE TEAM
-    // ======================================================
+    useEffect(() => {
+        if (!location) return;
 
-    const handleAssign = async (sosId) => {
-        if (!teamIdInput.trim()) {
-            setActionError(
-                "Select a rescue team."
+        const load = async () => {
+            setLoading(true);
+
+            await fetchDashboardData(
+                location.latitude,
+                location.longitude
             );
+
+            setLoading(false);
+        };
+
+        load();
+    }, [location]);
+
+    // =========================================================
+    // REFRESH
+    // =========================================================
+
+    const refreshDashboard = async () => {
+        if (!location) {
+            getCurrentLocation();
             return;
         }
 
-        try {
-            setActionError("");
+        setRefreshing(true);
 
-            await api.post(
-                `/api/sos/${sosId}/assign`,
-                {
-                    teamId:
-                        teamIdInput.trim()
-                }
-            );
-
-            setAssigningId(null);
-            setTeamIdInput("");
-
-            fetchReports();
-            fetchAvailableTeams();
-
-        } catch (err) {
-            console.error(
-                "Assign team error:",
-                err.response?.data ||
-                err.message
-            );
-
-            setActionError(
-                err.response?.data?.message ||
-                "Failed to assign team."
-            );
-        }
-    };
-
-    // ======================================================
-    // STATUS CHANGE
-    // ======================================================
-
-    const handleStatusChange = async (
-        sosId,
-        status
-    ) => {
-        try {
-            await api.patch(
-                `/api/sos/${sosId}/status`,
-                { status }
-            );
-
-            fetchReports();
-
-        } catch (err) {
-            console.error(
-                "Status update error:",
-                err.response?.data ||
-                err.message
-            );
-        }
-    };
-
-    // ======================================================
-    // SEVERITY COLOR
-    // ======================================================
-
-    const severityColor = (label) => {
-        switch (label) {
-            case "CRITICAL":
-                return "#dc2626";
-
-            case "HIGH":
-                return "#f97316";
-
-            case "MEDIUM":
-                return "#f59e0b";
-
-            default:
-                return "#16a34a";
-        }
-    };
-
-    // ======================================================
-    // DASHBOARD STATISTICS
-    // ======================================================
-
-    const statistics = useMemo(() => {
-
-        const criticalReports =
-            reports.filter(
-                (report) =>
-                    report.severityLabel ===
-                    "CRITICAL"
-            ).length;
-
-        const activeReports =
-            reports.filter(
-                (report) =>
-                    report.status !==
-                    "resolved"
-            ).length;
-
-        const peopleAffected =
-            reports.reduce(
-                (total, report) =>
-                    total +
-                    Number(
-                        report.peopleCount || 0
-                    ),
-                0
-            );
-
-        const immediateRelocations =
-            vulnerableHabitations.filter(
-                (item) =>
-                    item.priority ===
-                    "Immediate"
-            ).length;
-
-        const totalCapacity =
-            relocationSites.reduce(
-                (total, site) =>
-                    total +
-                    site.capacity,
-                0
-            );
-
-        const usedCapacity =
-            relocationSites.reduce(
-                (total, site) =>
-                    total +
-                    site.occupied,
-                0
-            );
-
-        return {
-            criticalReports,
-            activeReports,
-            peopleAffected,
-            immediateRelocations,
-            totalCapacity,
-            usedCapacity
-        };
-
-    }, [reports]);
-
-    // ======================================================
-    // LOADING
-    // ======================================================
-
-    if (loading) {
-        return (
-            <div className="authority-page">
-                <Navbar />
-
-                <div className="authority-loading">
-                    <div className="loading-spinner"></div>
-
-                    <p>
-                        Loading authority
-                        dashboard...
-                    </p>
-                </div>
-            </div>
+        await fetchDashboardData(
+            location.latitude,
+            location.longitude
         );
-    }
 
-    // ======================================================
-    // MAIN DASHBOARD
-    // ======================================================
+        setRefreshing(false);
+    };
+
+    // =========================================================
+    // NORMALIZE BACKEND ARRAYS
+    // =========================================================
+
+    const alerts = useMemo(() => {
+        return Array.isArray(dashboardData?.alerts)
+            ? dashboardData.alerts
+            : [];
+    }, [dashboardData]);
+
+    const hospitals = useMemo(() => {
+        return Array.isArray(dashboardData?.hospitals)
+            ? dashboardData.hospitals
+            : [];
+    }, [dashboardData]);
+
+    const shelters = useMemo(() => {
+        return Array.isArray(dashboardData?.shelters)
+            ? dashboardData.shelters
+            : [];
+    }, [dashboardData]);
+
+    // =========================================================
+    // SEARCH
+    // =========================================================
+
+    const filteredAlerts = useMemo(() => {
+        if (!search.trim()) return alerts;
+
+        const query = search.toLowerCase();
+
+        return alerts.filter((alert) =>
+            JSON.stringify(alert)
+                .toLowerCase()
+                .includes(query)
+        );
+    }, [alerts, search]);
+
+    // =========================================================
+    // ML RISK
+    // =========================================================
+
+    const riskObject = dashboardData?.disasterRisk;
+
+    const riskLevel =
+        riskObject?.risk ||
+        riskObject?.prediction?.risk ||
+        dashboardData?.riskLevel ||
+        null;
+
+    const probability =
+        riskObject?.probability ??
+        riskObject?.prediction?.probability ??
+        null;
+
+    const riskPercentage =
+        probability !== null &&
+        probability !== undefined &&
+        Number.isFinite(Number(probability))
+            ? Math.round(
+                  Math.max(
+                      0,
+                      Math.min(1, Number(probability))
+                  ) * 100
+              )
+            : null;
+
+    // =========================================================
+    // COUNTS FROM REAL RESPONSE
+    // =========================================================
+
+    const activeAlerts =
+        dashboardData?.activeAlerts ??
+        alerts.length;
+
+    const nearbyHospitals =
+        dashboardData?.nearbyHospitals ??
+        hospitals.length;
+
+    const nearbyShelters =
+        dashboardData?.nearbyShelters ??
+        shelters.length;
+
+    // =========================================================
+    // RENDER
+    // =========================================================
 
     return (
-        <div className="authority-page">
+        <div
+            className={`authority-shell ${
+                sidebarCollapsed ? "sidebar-collapsed" : ""
+            }`}
+        >
+            {/* =====================================================
+                SIDEBAR
+            ===================================================== */}
 
-            <Navbar />
+            <AuthoritySidebar
+                collapsed={sidebarCollapsed}
+                onToggle={() =>
+                    setSidebarCollapsed((previous) => !previous)
+                }
+            />
 
-            {/* ==================================================
-                HEADER
-            ================================================== */}
+            {/* =====================================================
+                MAIN
+            ===================================================== */}
 
-            <header className="authority-header">
+            <div className="authority-main">
 
-                <div>
-                    <p className="dashboard-label">
-                        RESQ INTELLIGENCE PLATFORM
-                    </p>
+                {/* =================================================
+                    TOPBAR
+                ================================================= */}
 
-                    <h1>
-                        Authority Decision Dashboard
-                    </h1>
+                <AuthorityTopbar
+                    search={search}
+                    setSearch={setSearch}
+                    onMenuClick={() =>
+                        setSidebarCollapsed((previous) => !previous)
+                    }
+                />
 
-                    <p>
-                        Monitor hazards, vulnerable
-                        habitations and relocation
-                        requirements in real time.
-                    </p>
-                </div>
+                {/* =================================================
+                    PAGE
+                ================================================= */}
 
-                <button
-                    className="refresh-btn"
-                    onClick={() => {
-                        fetchReports();
-                        fetchAvailableTeams();
-                    }}
-                >
-                    ⟳ Refresh Data
-                </button>
+                <main className="authority-page">
 
-            </header>
+                    {/* =================================================
+                        PAGE HEADER
+                    ================================================= */}
 
-            {/* ==================================================
-                ERROR
-            ================================================== */}
+                    <section className="authority-header">
 
-            {error && (
-                <p className="authority-error">
-                    ⚠️ {error}
-                </p>
-            )}
+                        <div className="authority-header-left">
 
-            <main className="authority-content">
+                            <div className="authority-status">
+                                <span></span>
+                                AUTHORITY COMMAND CENTER
+                            </div>
 
-                {/* ==================================================
-                    KPI CARDS
-                ================================================== */}
-
-                <section className="stats-grid">
-
-                    <div className="stat-card critical-card">
-
-                        <span className="stat-icon">
-                            🔴
-                        </span>
-
-                        <div>
-                            <p>
-                                Critical SOS
-                            </p>
-
-                            <strong>
-                                {
-                                    statistics
-                                        .criticalReports
-                                }
-                            </strong>
-                        </div>
-
-                    </div>
-
-                    <div className="stat-card">
-
-                        <span className="stat-icon">
-                            🚨
-                        </span>
-
-                        <div>
-                            <p>
-                                Active Emergencies
-                            </p>
-
-                            <strong>
-                                {
-                                    statistics
-                                        .activeReports
-                                }
-                            </strong>
-                        </div>
-
-                    </div>
-
-                    <div className="stat-card">
-
-                        <span className="stat-icon">
-                            🏘️
-                        </span>
-
-                        <div>
-                            <p>
-                                People Affected
-                            </p>
-
-                            <strong>
-                                {
-                                    statistics
-                                        .peopleAffected
-                                }
-                            </strong>
-                        </div>
-
-                    </div>
-
-                    <div className="stat-card priority-card">
-
-                        <span className="stat-icon">
-                            🚚
-                        </span>
-
-                        <div>
-                            <p>
-                                Immediate Relocation
-                            </p>
-
-                            <strong>
-                                {
-                                    statistics
-                                        .immediateRelocations
-                                }
-                            </strong>
-                        </div>
-
-                    </div>
-
-                </section>
-
-                {/* ==================================================
-                    RISK INTELLIGENCE
-                ================================================== */}
-
-                <section className="dashboard-section">
-
-                    <div className="section-heading-row">
-
-                        <div>
-                            <p className="section-label">
-                                RISK INTELLIGENCE
-                            </p>
-
-                            <h2>
-                                Hazard Zone Overview
-                            </h2>
+                            <h1>
+                                Disaster Response Overview
+                            </h1>
 
                             <p>
-                                Identified areas with
-                                elevated or critical
-                                hazard exposure.
-                            </p>
-                        </div>
-
-                        <span className="live-badge">
-                            ● LIVE MONITORING
-                        </span>
-
-                    </div>
-
-                    <div className="hazard-grid">
-
-                        {hazardZones.map(
-                            (zone) => (
-                                <div
-                                    className="hazard-card"
-                                    key={zone.id}
-                                >
-
-                                    <div className="hazard-card-top">
-
-                                        <span className="hazard-symbol">
-                                            🔴
-                                        </span>
-
-                                        <span
-                                            className={`risk-badge risk-${zone.riskLevel.toLowerCase()}`}
-                                        >
-                                            {
-                                                zone.riskLevel
-                                            }
-                                        </span>
-
-                                    </div>
-
-                                    <h3>
-                                        {zone.name}
-                                    </h3>
-
-                                    <p className="hazard-type">
-                                        {zone.hazard}
-                                    </p>
-
-                                    <div className="risk-score">
-
-                                        <span>
-                                            Risk Score
-                                        </span>
-
-                                        <strong>
-                                            {
-                                                zone.riskScore
-                                            }
-                                            /100
-                                        </strong>
-
-                                    </div>
-
-                                    <div className="risk-progress">
-
-                                        <div
-                                            style={{
-                                                width:
-                                                    `${zone.riskScore}%`
-                                            }}
-                                        ></div>
-
-                                    </div>
-
-                                    <p className="affected-text">
-                                        👥{" "}
-                                        {
-                                            zone.affectedPopulation
-                                        }{" "}
-                                        people potentially
-                                        affected
-                                    </p>
-
-                                </div>
-                            )
-                        )}
-
-                    </div>
-
-                </section>
-
-                {/* ==================================================
-                    VULNERABLE HABITATIONS
-                ================================================== */}
-
-                <section className="dashboard-section">
-
-                    <div className="section-heading-row">
-
-                        <div>
-                            <p className="section-label">
-                                VULNERABILITY ASSESSMENT
+                                Monitor incidents, emergency resources,
+                                affected areas and ML-powered risk
+                                intelligence from one place.
                             </p>
 
-                            <h2>
-                                Priority Habitations
-                            </h2>
-
-                            <p>
-                                Communities requiring
-                                relocation based on
-                                current risk levels.
-                            </p>
                         </div>
 
-                    </div>
+                        <div className="authority-header-actions">
 
-                    <div className="habitation-table">
+                            <div className="system-status">
+                                <ShieldCheck size={17} />
 
-                        <div className="table-header">
-                            <span>Habitation</span>
-                            <span>Population</span>
-                            <span>Risk Score</span>
-                            <span>Priority</span>
-                        </div>
-
-                        {vulnerableHabitations.map(
-                            (habitation) => (
-                                <div
-                                    className="table-row"
-                                    key={habitation.id}
-                                >
+                                <div>
+                                    <span>
+                                        System status
+                                    </span>
 
                                     <strong>
-                                        🏘️{" "}
-                                        {
-                                            habitation.name
-                                        }
+                                        {error
+                                            ? "Attention required"
+                                            : "Connected"}
                                     </strong>
-
-                                    <span>
-                                        {
-                                            habitation.population
-                                        }
-                                    </span>
-
-                                    <span
-                                        className={
-                                            habitation.riskScore >= 85
-                                                ? "score-critical"
-                                                : habitation.riskScore >= 70
-                                                    ? "score-high"
-                                                    : "score-medium"
-                                        }
-                                    >
-                                        {
-                                            habitation.riskScore
-                                        }/100
-                                    </span>
-
-                                    <span
-                                        className={`priority-badge ${habitation.priority.toLowerCase().replace("-", "")}`}
-                                    >
-                                        {
-                                            habitation.priority
-                                        }
-                                    </span>
-
                                 </div>
-                            )
-                        )}
+                            </div>
 
-                    </div>
+                            <button
+                                className="refresh-button"
+                                onClick={refreshDashboard}
+                                disabled={
+                                    refreshing ||
+                                    locationLoading
+                                }
+                            >
+                                <RefreshCw
+                                    size={16}
+                                    className={
+                                        refreshing
+                                            ? "spin"
+                                            : ""
+                                    }
+                                />
 
-                </section>
+                                {refreshing
+                                    ? "Refreshing"
+                                    : "Refresh"}
+                            </button>
 
-                {/* ==================================================
-                    RELOCATION CAPACITY
-                ================================================== */}
-
-                <section className="dashboard-section">
-
-                    <div className="section-heading-row">
-
-                        <div>
-                            <p className="section-label">
-                                RELOCATION PLANNING
-                            </p>
-
-                            <h2>
-                                Safer Alternative Sites
-                            </h2>
-
-                            <p>
-                                Current carrying capacity
-                                of identified relocation
-                                sites.
-                            </p>
                         </div>
 
-                    </div>
+                    </section>
 
-                    <div className="relocation-grid">
+                    {/* =================================================
+                        ERROR
+                    ================================================= */}
 
-                        {relocationSites.map(
-                            (site) => {
+                    {error && (
+                        <div className="authority-error">
+                            <XCircle size={18} />
 
-                                const available =
-                                    site.capacity -
-                                    site.occupied;
+                            <div>
+                                <strong>
+                                    Dashboard data unavailable
+                                </strong>
 
-                                const occupancy =
-                                    Math.round(
-                                        (
-                                            site.occupied /
-                                            site.capacity
-                                        ) * 100
-                                    );
+                                <span>
+                                    {error}
+                                </span>
+                            </div>
 
-                                return (
-                                    <div
-                                        className="relocation-card"
-                                        key={site.id}
-                                    >
+                            <button
+                                onClick={refreshDashboard}
+                            >
+                                Retry
+                            </button>
+                        </div>
+                    )}
 
-                                        <div className="relocation-top">
+                    {/* =================================================
+                        LOCATION STATUS
+                    ================================================= */}
 
-                                            <div>
+                    {locationError && (
+                        <div className="authority-location-warning">
+                            <MapPin size={17} />
 
-                                                <span className="safe-icon">
-                                                    🟢
-                                                </span>
+                            <span>
+                                {locationError}
+                            </span>
 
-                                                <h3>
-                                                    {site.name}
-                                                </h3>
+                            <button
+                                onClick={getCurrentLocation}
+                            >
+                                Retry location
+                            </button>
+                        </div>
+                    )}
 
-                                            </div>
+                    {/* =================================================
+                        STATISTICS
+                    ================================================= */}
 
-                                            <span
-                                                className={
-                                                    site.status ===
-                                                    "Available"
-                                                        ? "site-status available"
-                                                        : "site-status near-capacity"
+                    <section className="authority-stat-grid">
+
+                        <article className="authority-stat-card emergency">
+
+                            <div className="stat-card-icon">
+                                <ShieldAlert size={21} />
+                            </div>
+
+                            <div>
+                                <span>
+                                    Active Emergencies
+                                </span>
+
+                                <strong>
+                                    {loading
+                                        ? "—"
+                                        : activeAlerts}
+                                </strong>
+
+                                <small>
+                                    Live backend incidents
+                                </small>
+                            </div>
+
+                        </article>
+
+                        <article className="authority-stat-card">
+
+                            <div className="stat-card-icon">
+                                <Hospital size={21} />
+                            </div>
+
+                            <div>
+                                <span>
+                                    Hospitals
+                                </span>
+
+                                <strong>
+                                    {loading
+                                        ? "—"
+                                        : nearbyHospitals}
+                                </strong>
+
+                                <small>
+                                    Returned by backend
+                                </small>
+                            </div>
+
+                        </article>
+
+                        <article className="authority-stat-card">
+
+                            <div className="stat-card-icon">
+                                <Users size={21} />
+                            </div>
+
+                            <div>
+                                <span>
+                                    Shelters
+                                </span>
+
+                                <strong>
+                                    {loading
+                                        ? "—"
+                                        : nearbyShelters}
+                                </strong>
+
+                                <small>
+                                    Returned by backend
+                                </small>
+                            </div>
+
+                        </article>
+
+                        <article className="authority-stat-card risk-card">
+
+                            <div className="stat-card-icon">
+                                <AlertTriangle size={21} />
+                            </div>
+
+                            <div>
+                                <span>
+                                    ML Risk Assessment
+                                </span>
+
+                                <strong>
+                                    {loading
+                                        ? "—"
+                                        : riskLevel || "Unavailable"}
+                                </strong>
+
+                                <small>
+                                    {riskPercentage !== null
+                                        ? `${riskPercentage}% predicted probability`
+                                        : "Prediction unavailable"}
+                                </small>
+                            </div>
+
+                        </article>
+
+                    </section>
+
+                    {/* =================================================
+                        MAIN COMMAND GRID
+                    ================================================= */}
+
+                    <section className="authority-main-grid">
+
+                        {/* =================================================
+                            MAP
+                        ================================================= */}
+
+                        <section className="authority-panel map-panel">
+
+                            <div className="panel-header">
+
+                                <div>
+                                    <div className="panel-title">
+                                        <MapPin size={18} />
+                                        Live Incident Map
+                                    </div>
+
+                                    <p>
+                                        Geographic view of incidents and
+                                        emergency facilities.
+                                    </p>
+                                </div>
+
+                                <span className="live-badge">
+                                    LIVE
+                                </span>
+
+                            </div>
+
+                            <div className="authority-map-container">
+
+                                {locationLoading ? (
+                                    <div className="map-loading">
+                                        <RefreshCw
+                                            size={22}
+                                            className="spin"
+                                        />
+
+                                        <span>
+                                            Detecting authority location...
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <Map
+                                        location={location}
+                                        alerts={alerts}
+                                        hospitals={hospitals}
+                                        shelters={shelters}
+                                    />
+                                )}
+
+                            </div>
+
+                        </section>
+
+                        {/* =================================================
+                            INCIDENT QUEUE
+                        ================================================= */}
+
+                        <section className="authority-panel incident-panel">
+
+                            <div className="panel-header">
+
+                                <div>
+                                    <div className="panel-title">
+                                        <Radio size={18} />
+                                        Emergency Queue
+                                    </div>
+
+                                    <p>
+                                        Incidents currently received from
+                                        the backend.
+                                    </p>
+                                </div>
+
+                                <span className="queue-count">
+                                    {filteredAlerts.length}
+                                </span>
+
+                            </div>
+
+                            <div className="incident-list">
+
+                                {loading ? (
+                                    <div className="panel-empty">
+                                        <RefreshCw
+                                            size={20}
+                                            className="spin"
+                                        />
+
+                                        Loading incidents...
+                                    </div>
+                                ) : filteredAlerts.length === 0 ? (
+                                    <div className="panel-empty">
+                                        <ShieldCheck size={25} />
+
+                                        <strong>
+                                            No active incidents
+                                        </strong>
+
+                                        <span>
+                                            The backend has not returned
+                                            any current alerts.
+                                        </span>
+                                    </div>
+                                ) : (
+                                    filteredAlerts.map(
+                                        (alert, index) => (
+                                            <button
+                                                className="incident-row"
+                                                key={
+                                                    alert._id ||
+                                                    alert.id ||
+                                                    index
+                                                }
+                                                onClick={() =>
+                                                    setSelectedAlert(
+                                                        alert
+                                                    )
                                                 }
                                             >
-                                                {
-                                                    site.status
-                                                }
-                                            </span>
 
-                                        </div>
+                                                <div className="incident-icon">
+                                                    <AlertTriangle
+                                                        size={17}
+                                                    />
+                                                </div>
 
-                                        <div className="capacity-info">
+                                                <div className="incident-content">
 
-                                            <div>
-                                                <span>
-                                                    Available
-                                                </span>
+                                                    <strong>
+                                                        {alert.type ||
+                                                            alert.title ||
+                                                            alert.disasterType ||
+                                                            "Emergency incident"}
+                                                    </strong>
 
-                                                <strong>
-                                                    {
-                                                        available
-                                                    }
-                                                </strong>
-                                            </div>
+                                                    <span>
+                                                        <MapPin
+                                                            size={12}
+                                                        />
 
-                                            <div>
-                                                <span>
-                                                    Total Capacity
-                                                </span>
+                                                        {alert.location?.address ||
+                                                            alert.address ||
+                                                            alert.location?.name ||
+                                                            "Location supplied by backend"}
+                                                    </span>
 
-                                                <strong>
-                                                    {
-                                                        site.capacity
-                                                    }
-                                                </strong>
-                                            </div>
+                                                    <small>
+                                                        {alert.status ||
+                                                            alert.severity ||
+                                                            "Active"}
+                                                    </small>
 
-                                            <div>
-                                                <span>
-                                                    Safety Score
-                                                </span>
+                                                </div>
 
-                                                <strong>
-                                                    {
-                                                        site.safetyScore
-                                                    }
-                                                    /100
-                                                </strong>
-                                            </div>
+                                                <ChevronRight
+                                                    size={17}
+                                                />
 
-                                        </div>
+                                            </button>
+                                        )
+                                    )
+                                )}
 
-                                        <div className="capacity-bar">
+                            </div>
+
+                        </section>
+
+                    </section>
+
+                    {/* =================================================
+                        INTELLIGENCE + FACILITIES
+                    ================================================= */}
+
+                    <section className="authority-secondary-grid">
+
+                        {/* =================================================
+                            ML INTELLIGENCE
+                        ================================================= */}
+
+                        <section className="authority-panel">
+
+                            <div className="panel-header">
+
+                                <div>
+                                    <div className="panel-title">
+                                        <AlertTriangle size={18} />
+                                        ML Risk Intelligence
+                                    </div>
+
+                                    <p>
+                                        Prediction returned by the disaster
+                                        intelligence pipeline.
+                                    </p>
+                                </div>
+
+                            </div>
+
+                            <div className="risk-intelligence">
+
+                                <div className="risk-main">
+
+                                    <span>
+                                        Current predicted risk
+                                    </span>
+
+                                    <strong>
+                                        {loading
+                                            ? "Loading..."
+                                            : riskLevel ||
+                                              "Unavailable"}
+                                    </strong>
+
+                                    {riskPercentage !== null && (
+                                        <div className="risk-meter">
 
                                             <div
                                                 style={{
-                                                    width:
-                                                        `${occupancy}%`
+                                                    width: `${riskPercentage}%`,
                                                 }}
                                             ></div>
 
                                         </div>
-
-                                        <p>
-                                            {occupancy}% occupied
-                                        </p>
-
-                                    </div>
-                                );
-                            }
-                        )}
-
-                    </div>
-
-                </section>
-
-                {/* ==================================================
-                    DECISION SUPPORT
-                ================================================== */}
-
-                <section className="decision-panel">
-
-                    <div>
-
-                        <p className="section-label">
-                            DECISION SUPPORT
-                        </p>
-
-                        <h2>
-                            Recommended Priority Actions
-                        </h2>
-
-                        <p>
-                            Use current risk and
-                            capacity information to
-                            prioritize relocation
-                            planning.
-                        </p>
-
-                    </div>
-
-                    <div className="action-list">
-
-                        <div className="decision-action immediate">
-
-                            <span>
-                                01
-                            </span>
-
-                            <div>
-                                <strong>
-                                    Immediate Relocation
-                                </strong>
-
-                                <p>
-                                    Prioritize the highest
-                                    risk habitations for
-                                    immediate relocation.
-                                </p>
-                            </div>
-
-                        </div>
-
-                        <div className="decision-action short">
-
-                            <span>
-                                02
-                            </span>
-
-                            <div>
-                                <strong>
-                                    Short-Term Planning
-                                </strong>
-
-                                <p>
-                                    Prepare relocation
-                                    arrangements for
-                                    high-risk communities.
-                                </p>
-                            </div>
-
-                        </div>
-
-                        <div className="decision-action medium">
-
-                            <span>
-                                03
-                            </span>
-
-                            <div>
-                                <strong>
-                                    Medium-Term Planning
-                                </strong>
-
-                                <p>
-                                    Assess safer sites and
-                                    future carrying
-                                    capacity requirements.
-                                </p>
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </section>
-
-                {/* ==================================================
-                    SOS REPORTS
-                ================================================== */}
-
-                <section className="dashboard-section">
-
-                    <div className="section-heading-row">
-
-                        <div>
-                            <p className="section-label">
-                                EMERGENCY RESPONSE
-                            </p>
-
-                            <h2>
-                                Live SOS Reports
-                            </h2>
-
-                            <p>
-                                Monitor and coordinate
-                                active emergency
-                                response requests.
-                            </p>
-                        </div>
-
-                        <span className="report-count">
-                            {reports.length} Reports
-                        </span>
-
-                    </div>
-
-                    <div className="authority-list">
-
-                        {reports.length === 0 && !error && (
-                            <div className="empty-state">
-                                <span>✓</span>
-                                <p>
-                                    No SOS reports yet.
-                                </p>
-                            </div>
-                        )}
-
-                        {reports.map(
-                            (report) => (
-                                <div
-                                    className="sos-report-card"
-                                    key={report._id}
-                                >
-
-                                    <div className="sos-report-top">
-
-                                        <span
-                                            className="severity-badge"
-                                            style={{
-                                                background:
-                                                    severityColor(
-                                                        report.severityLabel
-                                                    )
-                                            }}
-                                        >
-                                            {
-                                                report.severityLabel
-                                            }{" "}
-                                            ·{" "}
-                                            {
-                                                report.severityScore
-                                            }
-                                        </span>
-
-                                        <span
-                                            className={`status-pill status-${report.status}`}
-                                        >
-                                            {
-                                                report.status
-                                            }
-                                        </span>
-
-                                    </div>
-
-                                    <p className="sos-description">
-                                        {
-                                            report.description
-                                        }
-                                    </p>
-
-                                    <div className="sos-meta-grid">
-
-                                        <div>
-                                            <span>
-                                                People trapped
-                                            </span>
-
-                                            <strong>
-                                                {
-                                                    report.peopleCount
-                                                }
-                                            </strong>
-                                        </div>
-
-                                        <div>
-                                            <span>
-                                                Reporter
-                                            </span>
-
-                                            <strong>
-                                                {
-                                                    report
-                                                        .reporterId
-                                                        ?.name ||
-                                                    "Unknown"
-                                                }
-                                            </strong>
-                                        </div>
-
-                                        <div>
-                                            <span>
-                                                Category
-                                            </span>
-
-                                            <strong>
-                                                {
-                                                    report.category
-                                                }
-                                            </strong>
-                                        </div>
-
-                                        <div>
-                                            <span>
-                                                Location
-                                            </span>
-
-                                            <strong>
-                                                {report.location
-                                                    ?.coordinates?.[1]
-                                                    ?.toFixed(4)}
-                                                ,{" "}
-                                                {report.location
-                                                    ?.coordinates?.[0]
-                                                    ?.toFixed(4)}
-                                            </strong>
-                                        </div>
-
-                                    </div>
-
-                                    {report.photoUrl && (
-                                        <img
-                                            src={
-                                                report.photoUrl
-                                            }
-                                            alt="SOS evidence"
-                                            className="sos-photo"
-                                        />
                                     )}
 
-                                    <div className="sos-actions">
-
-                                        {report.status ===
-                                            "pending" &&
-                                            assigningId !==
-                                            report._id && (
-                                                <button
-                                                    className="assign-btn"
-                                                    onClick={() =>
-                                                        setAssigningId(
-                                                            report._id
-                                                        )
-                                                    }
-                                                >
-                                                    Assign Rescue
-                                                    Team
-                                                </button>
-                                            )}
-
-                                        {assigningId ===
-                                            report._id && (
-                                                <div className="assign-form">
-
-                                                    <select
-                                                        value={
-                                                            teamIdInput
-                                                        }
-                                                        onChange={(e) =>
-                                                            setTeamIdInput(
-                                                                e
-                                                                    .target
-                                                                    .value
-                                                            )
-                                                        }
-                                                    >
-
-                                                        <option value="">
-                                                            Select a rescue
-                                                            team
-                                                        </option>
-
-                                                        {availableTeams.map(
-                                                            (team) => (
-                                                                <option
-                                                                    key={
-                                                                        team._id
-                                                                    }
-                                                                    value={
-                                                                        team._id
-                                                                    }
-                                                                >
-                                                                    {
-                                                                        team.name
-                                                                    }{" "}
-                                                                    —{" "}
-                                                                    {
-                                                                        team.teamType
-                                                                    }{" "}
-                                                                    (
-                                                                    {
-                                                                        team.members
-                                                                    }{" "}
-                                                                    members)
-                                                                </option>
-                                                            )
-                                                        )}
-
-                                                    </select>
-
-                                                    <button
-                                                        onClick={() =>
-                                                            handleAssign(
-                                                                report._id
-                                                            )
-                                                        }
-                                                    >
-                                                        Confirm
-                                                    </button>
-
-                                                    <button
-                                                        className="cancel-assign"
-                                                        onClick={() => {
-                                                            setAssigningId(
-                                                                null
-                                                            );
-
-                                                            setTeamIdInput(
-                                                                ""
-                                                            );
-
-                                                            setActionError(
-                                                                ""
-                                                            );
-                                                        }}
-                                                    >
-                                                        Cancel
-                                                    </button>
-
-                                                </div>
-                                            )}
-
-                                        {report.status ===
-                                            "assigned" && (
-                                                <button
-                                                    className="progress-btn"
-                                                    onClick={() =>
-                                                        handleStatusChange(
-                                                            report._id,
-                                                            "in-progress"
-                                                        )
-                                                    }
-                                                >
-                                                    Mark In Progress
-                                                </button>
-                                            )}
-
-                                        {report.status ===
-                                            "in-progress" && (
-                                                <button
-                                                    className="resolve-btn"
-                                                    onClick={() =>
-                                                        handleStatusChange(
-                                                            report._id,
-                                                            "resolved"
-                                                        )
-                                                    }
-                                                >
-                                                    Mark Resolved
-                                                </button>
-                                            )}
-
-                                    </div>
-
-                                    {actionError &&
-                                        assigningId ===
-                                        report._id && (
-                                            <p className="authority-error">
-                                                {
-                                                    actionError
-                                                }
-                                            </p>
-                                        )}
+                                    {riskPercentage !== null && (
+                                        <small>
+                                            Model probability:{" "}
+                                            {riskPercentage}%
+                                        </small>
+                                    )}
 
                                 </div>
-                            )
-                        )}
+
+                                <div className="risk-source">
+
+                                    <ShieldCheck size={19} />
+
+                                    <div>
+                                        <strong>
+                                            Backend connected
+                                        </strong>
+
+                                        <span>
+                                            Risk information is read
+                                            directly from the dashboard
+                                            API response.
+                                        </span>
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            {dashboardData?.weather && (
+                                <div className="environment-grid">
+
+                                    <div>
+                                        <span>
+                                            Temperature
+                                        </span>
+
+                                        <strong>
+                                            {dashboardData.weather.temperature ??
+                                                "—"}
+                                        </strong>
+                                    </div>
+
+                                    <div>
+                                        <span>
+                                            Humidity
+                                        </span>
+
+                                        <strong>
+                                            {dashboardData.weather.humidity ??
+                                                "—"}
+                                        </strong>
+                                    </div>
+
+                                    <div>
+                                        <span>
+                                            Rainfall
+                                        </span>
+
+                                        <strong>
+                                            {dashboardData.weather.rainfall ??
+                                                "—"}
+                                        </strong>
+                                    </div>
+
+                                </div>
+                            )}
+
+                        </section>
+
+                        {/* =================================================
+                            FACILITIES
+                        ================================================= */}
+
+                        <section className="authority-panel">
+
+                            <div className="panel-header">
+
+                                <div>
+                                    <div className="panel-title">
+                                        <Hospital size={18} />
+                                        Emergency Facilities
+                                    </div>
+
+                                    <p>
+                                        Facilities returned by the live
+                                        dashboard data.
+                                    </p>
+                                </div>
+
+                            </div>
+
+                            <div className="facility-summary">
+
+                                <div className="facility-summary-item">
+
+                                    <Hospital size={20} />
+
+                                    <div>
+                                        <span>
+                                            Hospitals
+                                        </span>
+
+                                        <strong>
+                                            {loading
+                                                ? "—"
+                                                : hospitals.length}
+                                        </strong>
+                                    </div>
+
+                                </div>
+
+                                <div className="facility-summary-item">
+
+                                    <Users size={20} />
+
+                                    <div>
+                                        <span>
+                                            Shelters
+                                        </span>
+
+                                        <strong>
+                                            {loading
+                                                ? "—"
+                                                : shelters.length}
+                                        </strong>
+                                    </div>
+
+                                </div>
+
+                                <div className="facility-summary-item">
+
+                                    <Package size={20} />
+
+                                    <div>
+                                        <span>
+                                            Resource data
+                                        </span>
+
+                                        <strong>
+                                            Backend
+                                        </strong>
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </section>
+
+                    </section>
+
+                    {/* =================================================
+                        RESPONSE OPERATIONS
+                    ================================================= */}
+
+                    <section className="authority-panel operations-panel">
+
+                        <div className="panel-header">
+
+                            <div>
+                                <div className="panel-title">
+                                    <Users size={18} />
+                                    Response Operations
+                                </div>
+
+                                <p>
+                                    Team deployment and resource allocation
+                                    should be connected to the authority
+                                    backend here.
+                                </p>
+                            </div>
+
+                        </div>
+
+                        <div className="operations-placeholder">
+
+                            <div>
+                                <Users size={21} />
+                                <strong>
+                                    Response teams
+                                </strong>
+                                <span>
+                                    Waiting for the authority team API.
+                                </span>
+                            </div>
+
+                            <div>
+                                <Package size={21} />
+                                <strong>
+                                    Resource allocation
+                                </strong>
+                                <span>
+                                    Waiting for live inventory data.
+                                </span>
+                            </div>
+
+                            <div>
+                                <Radio size={21} />
+                                <strong>
+                                    Dispatch control
+                                </strong>
+                                <span>
+                                    Ready to connect to dispatch APIs.
+                                </span>
+                            </div>
+
+                        </div>
+
+                    </section>
+
+                </main>
+            </div>
+
+            {/* =========================================================
+                INCIDENT DETAIL
+            ========================================================= */}
+
+            {selectedAlert && (
+                <div
+                    className="authority-modal-backdrop"
+                    onClick={() =>
+                        setSelectedAlert(null)
+                    }
+                >
+
+                    <div
+                        className="authority-modal"
+                        onClick={(event) =>
+                            event.stopPropagation()
+                        }
+                    >
+
+                        <button
+                            className="modal-close"
+                            onClick={() =>
+                                setSelectedAlert(null)
+                            }
+                        >
+                            <XCircle size={20} />
+                        </button>
+
+                        <div className="modal-icon">
+                            <AlertTriangle size={23} />
+                        </div>
+
+                        <span className="modal-kicker">
+                            INCIDENT DETAILS
+                        </span>
+
+                        <h2>
+                            {selectedAlert.type ||
+                                selectedAlert.title ||
+                                selectedAlert.disasterType ||
+                                "Emergency incident"}
+                        </h2>
+
+                        <div className="modal-location">
+                            <MapPin size={15} />
+
+                            {selectedAlert.location?.address ||
+                                selectedAlert.address ||
+                                selectedAlert.location?.name ||
+                                "Location supplied by backend"}
+                        </div>
+
+                        <div className="modal-data">
+
+                            <div>
+                                <span>
+                                    Severity
+                                </span>
+
+                                <strong>
+                                    {selectedAlert.severity ||
+                                        "Not supplied"}
+                                </strong>
+                            </div>
+
+                            <div>
+                                <span>
+                                    Status
+                                </span>
+
+                                <strong>
+                                    {selectedAlert.status ||
+                                        "Not supplied"}
+                                </strong>
+                            </div>
+
+                            <div>
+                                <span>
+                                    ID
+                                </span>
+
+                                <strong>
+                                    {selectedAlert._id ||
+                                        selectedAlert.id ||
+                                        "Not supplied"}
+                                </strong>
+                            </div>
+
+                        </div>
+
+                        <p className="modal-description">
+                            {selectedAlert.description ||
+                                selectedAlert.message ||
+                                "No additional incident description was returned by the backend."}
+                        </p>
+
+                        <div className="modal-note">
+                            <ShieldCheck size={17} />
+
+                            <span>
+                                This dashboard displays backend data only.
+                                Dispatch and incident-state changes should
+                                be performed through the authority API.
+                            </span>
+                        </div>
 
                     </div>
 
-                </section>
-
-            </main>
-
+                </div>
+            )}
         </div>
     );
 }

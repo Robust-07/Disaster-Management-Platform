@@ -4,7 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "keywords": [],
   "author": "",
@@ -12,12 +16,21 @@
   "type": "commonjs",
   "dependencies": {
     "bcryptjs": "^3.0.3",
+    "cloudinary": "^1.41.3",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.7.0",
+    "framer-motion": "^13.3.0",
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
+    "method-override": "^3.0.0",
     "mongoose": "^9.9.2",
-    "morgan": "^1.11.0"
+    "morgan": "^1.11.0",
+    "multer": "^2.2.0",
+    "nodemailer": "^10.0.3",
+    "recharts": "^3.10.1",
+    "socket.io": "^4.8.3",
+    "streamifier": "^0.1.1"
   }
 }
