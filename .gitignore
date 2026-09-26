@@ -17,4 +17,7 @@ __pycache__/
 Thumbs.db
 
 #ML model files
-ml-service/model/*.pkl
+ml-service/models/*.pkl 
+# Large raw datasets
+ml-service/data/raw/2011-IndiaStateDistSbDistVill-0000.xlsx
+ml-service/data/raw/vb_soi_up.GeoJSON

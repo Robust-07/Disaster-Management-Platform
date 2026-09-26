@@ -30,16 +30,29 @@ def clamp_score(value):
     return max(0, min(100, float(value)))
 
 
+def normalize(value, minimum, maximum):
+    """
+    Converts a value into a 0-1 range.
+    """
+
+    if maximum == minimum:
+        return 0
+
+    normalized = (float(value) - minimum) / (maximum - minimum)
+
+    return max(0, min(1, normalized))
+
+
 def get_risk_level(risk_score):
     """
     Converts numerical risk score into backend risk level.
     """
 
-    if risk_score >= 75:
+    if risk_score >= 90:
         return "RED"
-    elif risk_score >= 50:
+    elif risk_score >= 70:
         return "ORANGE"
-    elif risk_score >= 25:
+    elif risk_score >= 40:
         return "YELLOW"
     else:
         return "GREEN"
@@ -78,6 +91,7 @@ VILLAGE_DATA_PATH = (
 
 
 village_df = pd.read_csv(VILLAGE_DATA_PATH)
+
 
 print("Final village dataset loaded successfully")
 print("Total villages:", len(village_df))
@@ -635,9 +649,10 @@ def get_villages():
                 "population",
                 "vulnerability_score_100",
                 "vulnerability_category"
+                
             ]
         ].copy()
-
+        
         # Convert NaN values to None
         data = data.astype(object).where(
             pd.notnull(data),
@@ -778,27 +793,17 @@ def predict_habitation():
         # 1. HABITATION HAZARD RISK
         # =================================================
 
-        risk_features = [[
-
-            float(data["population"]),
-
-            float(data["rainfall"]),
-
-            float(data["river_level"]),
-
-            float(data["flood_history"]),
-
-            float(data["building_damage"]),
-
-            float(data["vulnerable_population"]),
-
-            float(data["water_level"]),
-
-            float(data["road_access"]),
-
-            float(data["hospital_distance"])
-
-        ]]
+        risk_features = pd.DataFrame([{
+    "population": float(data["population"]),
+    "rainfall": float(data["rainfall"]),
+    "river_level": float(data["river_level"]),
+    "flood_history": float(data["flood_history"]),
+    "building_damage": float(data["building_damage"]),
+    "vulnerable_population": float(data["vulnerable_population"]),
+    "water_level": float(data["water_level"]),
+    "road_access": float(data["road_access"]),
+    "hospital_distance": float(data["hospital_distance"])
+}])
 
 
         risk_prediction = (
@@ -869,21 +874,77 @@ def predict_habitation():
         # =================================================
 
         zone = get_risk_level(risk_score)
-        vulnerability_score = risk_score
+        vulnerability_score = float(
+            data.get("vulnerability_score_100", risk_score)
+        )
 
+        vulnerability_score = clamp_score(vulnerability_score)
 
         # =================================================
-        # 4. HAZARD SCORES
+        # 4. INDIVIDUAL HAZARD SCORES
         # =================================================
 
-        # Currently using the overall risk score for each hazard.
-        # Replace these later if separate hazard models are available.
+        # These are explainable hazard estimates based on
+        # the available habitation features.
+        # They are not separate ML model predictions yet.
+
+        rainfall = float(data["rainfall"])
+        river_level = float(data["river_level"])
+        flood_history = float(data["flood_history"])
+        building_damage = float(data["building_damage"])
+        water_level = float(data["water_level"])
+        road_access = float(data["road_access"])
+        hospital_distance = float(data["hospital_distance"])
+
+        # -------------------------------------------------
+        # FLOOD SCORE
+        # -------------------------------------------------
+
+        flood_score = (
+            0.35 * normalize(rainfall, 0, 1500)
+            + 0.30 * normalize(river_level, 0, 10)
+            + 0.20 * normalize(water_level, 0, 10)
+            + 0.15 * normalize(flood_history, 0, 10)
+        ) * 100
+
+# -------------------------------------------------
+# LANDSLIDE SCORE
+# -------------------------------------------------
+
+        landslide_score = (
+            0.45 * normalize(rainfall, 0, 1500)
+            + 0.30 * normalize(building_damage, 0, 100)
+            + 0.15 * normalize(road_access, 0, 100)
+            + 0.10 * normalize(hospital_distance, 0, 20)
+        ) * 100
+
+# -------------------------------------------------
+# EROSION SCORE
+# -------------------------------------------------
+
+        erosion_score = (
+            0.45 * normalize(river_level, 0, 10)
+            + 0.30 * normalize(flood_history, 0, 10)
+            + 0.15 * normalize(water_level, 0, 10)
+            + 0.10 * normalize(rainfall, 0, 1500)
+        ) * 100
+
+# -------------------------------------------------
+# CLOUDBURST SCORE
+# -------------------------------------------------
+
+        cloudburst_score = (
+            0.60 * normalize(rainfall, 0, 1500)
+            + 0.20 * normalize(water_level, 0, 10)
+            + 0.10 * normalize(road_access, 0, 100)
+            + 0.10 * normalize(flood_history, 0, 10)
+        ) * 100
 
         hazards = {
-            "flood": round(risk_score, 2),
-            "landslide": round(risk_score, 2),
-            "erosion": round(risk_score, 2),
-            "cloudburst": round(risk_score, 2)
+            "flood": round(clamp_score(flood_score), 2),
+            "landslide": round(clamp_score(landslide_score), 2),
+            "erosion": round(clamp_score(erosion_score), 2),
+            "cloudburst": round(clamp_score(cloudburst_score), 2)
         }
 
 
